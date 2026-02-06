@@ -20,5 +20,7 @@ The logic works as following:
 eg. if the first time the rover turned right,the second time would also turn right
 6 Start the loop again
 
+DEMO Video: https://drive.google.com/file/d/1objeHKCd6fR-jWB1OGfOA8x9HnwabTlW/view?usp=sharing
+
 
 The base detection is done but not yet incorporated in the rover movement
