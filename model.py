@@ -89,7 +89,7 @@ def predict(model, device):
 
 
 # MAIN
-def main():
+def detect_rust():
     print("Capturing image...")
     capture_image()
     print(f"Saved: {IMAGE_PATH.resolve()}")
@@ -104,6 +104,7 @@ def main():
     print(f"Predicted class: {label}")
     print(f"Confidence:      {conf:.4f}")
     print(f"Probabilities:   {probs}")
+    return label, conf, probs
 
 if __name__ == "__main__":
-    main()
+    detect_rust()
