@@ -22,25 +22,41 @@ def send_cmd(ser, x: float, z: float = 0.0) -> None:
 def stop(ser) -> None:
     send_cmd(ser, 0.0, 0.0)
 
-def read_odl_odr(ser, wait_s: float = 0.5):
+def read_odl_odr(ser, wait_s: float = 0.03):
     """
-    Read one telemetry line containing odl/odr (in mm).
-    Returns (odl_mm, odr_mm) or (None, None) if timeout.
+    Read latest available telemetry containing odl/odr.
+    Returns (odl_mm, odr_mm) or (None, None) if nothing valid.
     """
+
     deadline = time.monotonic() + wait_s
+    latest = None
+
     while time.monotonic() < deadline:
-        line = ser.readline().decode("utf-8", errors="ignore").strip()
-        if not line:
+        # update faster 
+        if ser.in_waiting <= 0:
             continue
+
+        raw = ser.readline()
+        if not raw:
+            continue
+
+        line = raw.decode("utf-8", errors="ignore").strip()
+
         try:
             obj = json.loads(line)
         except json.JSONDecodeError:
             continue
+
         if isinstance(obj, dict) and ("odl" in obj) and ("odr" in obj):
             try:
-                return int(obj["odl"]), int(obj["odr"])
+                latest = (int(obj["odl"]), int(obj["odr"]))
             except Exception:
                 continue
+
+    # Return most recent valid reading
+    if latest is not None:
+        return latest
+
     return None, None
 
 def drive_forward_mm(
@@ -78,7 +94,7 @@ def drive_forward_mm(
     try:
         while True:
             time.sleep(poll_dt)
-            L, R = read_odl_odr(ser, 0.2)
+            L, R = read_odl_odr(ser, 0.03)
             if L is not None and R is not None:
                 dL = (L - L0)*10
                 dR = (R - R0)*10
@@ -86,12 +102,12 @@ def drive_forward_mm(
 
                 now = time.monotonic()
                 if now - last_print >= PROGRESS_EVERY:
-                    print(f"[PROG {label}] avg_mm={avg_mm:.0f} / {target_mm:.0f}  (ΔL={L-last_L:+d}, ΔR={R-last_R:+d})")
+                    print(f"[PROG {label}] avg_mm={avg_mm:.0f} / {target_mm:.0f}  (ÎL={L-last_L:+d}, ÎR={R-last_R:+d})")
                     last_print = now
                     last_L, last_R = L, R
 
                 if avg_mm >= target_mm:
-                    print(f"[MOTION] Stop {label}: avg_mm={avg_mm:.0f} ≥ target_mm={target_mm:.0f}.")
+                    print(f"[MOTION] Stop {label}: avg_mm={avg_mm:.0f} â¥ target_mm={target_mm:.0f}.")
                     break
 
             if time.monotonic() - start > timeout_s:
