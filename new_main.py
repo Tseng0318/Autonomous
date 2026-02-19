@@ -18,7 +18,7 @@ PORT_UGV = "/dev/ttyACM0" # connected port, do not change here
 BAUD_UGV = 115200 # connected port, do not change here
 
 def main():
-    ser = serial.Serial(PORT_UGV, BAUD_UGV, timeout=0.1) # connect to ports
+    ser = serial.Serial(PORT_UGV, BAUD_UGV, timeout=0.02) # connect to ports
     time.sleep(0.2)
 
     # Request fast telemetry if firmware supports T=142, cmd=50
