@@ -18,13 +18,13 @@
     <div class="section-title">Movement Control</div>
     <div class="movement-grid">
       <div></div>
-      <button class="btn" onmousedown="move(0.5, 0.5)" onmouseup="stop()">Forward</button>
+      <button class="btn" id="btn-forward">Forward</button>
       <div></div>
-      <button class="btn" onmousedown="move(0.5, -0.5)" onmouseup="stop()">Left</button>
-      <button class="btn" onmousedown="stop()">Stop</button>
-      <button class="btn" onmousedown="move(-0.5, 0.5)" onmouseup="stop()">Right</button>
+      <button class="btn" id="btn-left">Left</button>
+      <button class="btn" id="btn-stop">Stop</button>
+      <button class="btn" id="btn-right">Right</button>
       <div></div>
-      <button class="btn" onmousedown="move(-0.5, -0.5)" onmouseup="stop()">Backward</button>
+      <button class="btn" id="btn-backward">Backward</button>
       <div></div>
     </div>
 
@@ -77,6 +77,40 @@
     function stop() {
       fetch(`/move?L=0&R=0`);
     }
+
+    // Attach press-and-hold for mouse, tap-to-move-then-stop for touch
+    function bindMoveButton(id, L, R) {
+      const btn = document.getElementById(id);
+      if (!btn) return;
+
+      // Desktop: hold to move, release to stop
+      btn.addEventListener('mousedown', (e) => { move(L, R); });
+      btn.addEventListener('mouseup',   (e) => { stop(); });
+      btn.addEventListener('mouseleave', (e) => { stop(); });
+
+      // Mobile: touchstart moves, touchend stops immediately
+      btn.addEventListener('touchstart', (e) => {
+        e.preventDefault(); // prevent duplicate mouse events on mobile
+        move(L, R);
+      }, { passive: false });
+      btn.addEventListener('touchend', (e) => {
+        e.preventDefault();
+        stop();
+      }, { passive: false });
+    }
+
+    bindMoveButton('btn-forward',  0.5,  0.5);
+    bindMoveButton('btn-left',     0.5, -0.5);
+    bindMoveButton('btn-right',   -0.5,  0.5);
+    bindMoveButton('btn-backward',-0.5, -0.5);
+
+    // Stop button
+    const stopBtn = document.getElementById('btn-stop');
+    if (stopBtn) {
+      stopBtn.addEventListener('click', stop);
+      stopBtn.addEventListener('touchstart', (e) => { e.preventDefault(); stop(); }, { passive: false });
+    }
+
     function moveServo(num) {
       const degrees = document.getElementById(`servo${num}`).value;
       fetch(`/servo?servo=${num}&degrees=${degrees}`);
