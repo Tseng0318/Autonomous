@@ -2,12 +2,14 @@ from gpiozero import AngularServo
 from time import sleep
 import time
 import math
+'''
 from ikpy.chain import Chain
 from ikpy.link import OriginLink, URDFLink
 import numpy as np
-
+'''
 servo_pins = [12, 11, 13, 15]
 pwms = []
+'''
 L1, L2 = 5.0, 2.5  # lengths of arm segments
 arm_chain = Chain(name="3dof_arm", links=[
     OriginLink(),
@@ -36,6 +38,8 @@ arm_chain = Chain(name="3dof_arm", links=[
         rotation=[0, 1, 0],   # Y-axis
     ),
 ])
+'''
+
 
 
 def setup_servo():
@@ -63,16 +67,17 @@ def cleanup():
         servo.close()
     print("Servos cleaned up.")
 
-
+'''
 def servo_calculation(x:float, y:float, z:float):
     '''
+'''
     Args:
         x, y, z: coordinates in 3D space
     Returns:
         [theta1, theta2, theta3] in degrees
         angles for servo 1, 2, and 3, not yet considering servo 4 the wrist
- 
     '''
+'''
     target_position = [x, y, z]
     ik_solution = arm_chain.inverse_kinematics(
         target_position
@@ -81,7 +86,7 @@ def servo_calculation(x:float, y:float, z:float):
     for ik in ik_solution:
         degrees.append(math.degrees(ik))
     return degrees  
-
+'''
 
 def move_arm(x:float, y:float, z:float):
     '''
