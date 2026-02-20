@@ -17,7 +17,7 @@ from approach import do_one_cycle
 PORT_UGV = "/dev/ttyACM0" # connected port, do not change here
 BAUD_UGV = 115200 # connected port, do not change here
 
-def main():
+def main(stop_event):
     ser = serial.Serial(PORT_UGV, BAUD_UGV, timeout=0.02) # connect to ports
     time.sleep(0.2)
 
@@ -26,7 +26,7 @@ def main():
     print(f"[MAIN] Connected to UGV on {PORT_UGV} @ {BAUD_UGV}.")
 
     try:
-        while True:
+        while not stop_event.is_set():
             do_one_cycle(ser) # perform the preset path logic
             time.sleep(1.0)  # small pause between cycles
 

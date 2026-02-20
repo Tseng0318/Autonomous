@@ -9,8 +9,8 @@ Unified robot controller for your setup:
 from flask import Flask, request, render_template, jsonify
 import os, time, glob, logging, requests, serial, json
 from servo_final import set_angle, setup_servo, cleanup
-from base.new_main import auto
-# from servo_control import set_angle, setup_servo, cleanup
+from base.new_main import main as auto
+import threading
 
 
 app = Flask(__name__, template_folder="templates")
@@ -35,6 +35,9 @@ PORT_UGV = "/dev/ttyACM0" # connected port, do not change here
 BAUD_UGV = 115200 # connected port, do not change here
 
 ser = serial.Serial(PORT_UGV, BAUD_UGV, timeout=0.02) # connect to ports
+
+stop_event = threading.Event()
+AUTO_MOVE = threading.Thread(target=auto, args=(stop_event,)) # Thread to run the autonomous movement logic
 
 def _auto_serial(pattern, baud):
     '''
@@ -206,7 +209,7 @@ def start_scan():
     """
     try:
         app.logger.info("[SCAN] Starting autonomous scan...")
-        auto()
+        AUTO_MOVE.start()
         # TODO: Add scan initialization logic
         return jsonify(ok=True, status="scan_started")
     except Exception as e:
@@ -220,7 +223,8 @@ def stop_scan():
     """
     try:
         app.logger.info("[SCAN] Stopping scan and robot...")
-        
+        stop_event.set()  # Signal the autonomous thread to stop
+        AUTO_MOVE.join(timeout=1.0)  # Wait for the autonomous movement thread to finish
         # TODO: Add scan cleanup logic
         return jsonify(ok=True, status="scan_stopped")
     except Exception as e:
