@@ -8,7 +8,8 @@ Unified robot controller for your setup:
 
 from flask import Flask, request, render_template, jsonify
 import os, time, glob, logging, requests, serial, json
-from servo_final import set_angle
+from servo_final import set_angle, setup_servo, cleanup
+from base.new_main import auto
 # from servo_control import set_angle, setup_servo, cleanup
 
 
@@ -30,7 +31,10 @@ ARM_PORT_PATTERN = os.getenv("ARM_PORT_PATTERN", "/dev/ttyACM*")     # or /dev/t
 REQUIRE_INDEX    = True
 
 # Serial Setup (ARM)
-ser = None
+PORT_UGV = "/dev/ttyACM0" # connected port, do not change here
+BAUD_UGV = 115200 # connected port, do not change here
+
+ser = serial.Serial(PORT_UGV, BAUD_UGV, timeout=0.02) # connect to ports
 
 def _auto_serial(pattern, baud):
     '''
@@ -86,6 +90,11 @@ def move_base(L,R):
     '''
     if not (-1<=L<=1 and -1<=R<=1):
         raise ValueError("Speeds must be between -1 and 1")
+    msg = {"T": 1, "L": L, "R": R}
+    ser.write((json.dumps(msg) + "\n").encode("utf-8"))
+    
+    
+    '''
     url=f"{BASE_HOST.rstrip('/')}{BASE_MOVE_PATH}"
     app.logger.info(f"[BASE] → {url}  L={L}  R={R}")
     payload = {"T": 1, "L": L, "R": R}
@@ -94,6 +103,8 @@ def move_base(L,R):
     print(url)
     response = requests.get(url)
     print(response)
+    '''
+    
 
     '''
     if BASE_METHOD.upper()=="GET":
@@ -195,6 +206,7 @@ def start_scan():
     """
     try:
         app.logger.info("[SCAN] Starting autonomous scan...")
+        auto()
         # TODO: Add scan initialization logic
         return jsonify(ok=True, status="scan_started")
     except Exception as e:
@@ -208,7 +220,7 @@ def stop_scan():
     """
     try:
         app.logger.info("[SCAN] Stopping scan and robot...")
-        move_base(0, 0)  # Stop the robot
+        
         # TODO: Add scan cleanup logic
         return jsonify(ok=True, status="scan_stopped")
     except Exception as e:
@@ -231,6 +243,7 @@ def return_to_base():
         return jsonify(ok=False, error=str(e)), 500
 
 if __name__=="__main__":
-    #initialize_serial()
-    # setup_servo()
+
+    setup_servo()
     app.run(host="0.0.0.0",port=5000)
+    cleanup()
