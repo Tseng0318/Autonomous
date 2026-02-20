@@ -6,11 +6,39 @@ Unified robot controller for your setup:
 - /valve → sends 'valve on' or 'valve off' to the ARM
 """
 
+import sys, os
+# Ensure the workspace root (parent of this app/ folder) is on sys.path
+# so that the 'base' package can be imported regardless of where you run from.
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
 from flask import Flask, request, render_template, jsonify
-import os, time, glob, logging, requests, serial, json
-from servo_final import set_angle, setup_servo, cleanup
-from base.new_main import main as auto
+import os, time, glob, logging, requests, json
 import threading
+
+# --- Hardware availability flag (False on Windows / non-Pi environments) ---
+HARDWARE_AVAILABLE = True
+
+try:
+    import serial
+except ImportError:
+    serial = None
+    HARDWARE_AVAILABLE = False
+    logging.warning("pyserial not available — serial hardware disabled")
+
+try:
+    from servo_final import set_angle, setup_servo, cleanup
+except Exception as _e:
+    HARDWARE_AVAILABLE = False
+    logging.warning(f"servo_final unavailable ({_e}) — servo hardware disabled")
+    def set_angle(servo_num, angle): pass
+    def setup_servo(): pass
+    def cleanup(): pass
+
+try:
+    from base.new_main import main as auto
+except Exception as _e:
+    logging.warning(f"base.new_main unavailable ({_e}) — autonomous mode disabled")
+    def auto(stop_event): pass
 
 
 app = Flask(__name__, template_folder="templates")
@@ -34,7 +62,11 @@ REQUIRE_INDEX    = True
 PORT_UGV = "/dev/ttyACM0" # connected port, do not change here
 BAUD_UGV = 115200 # connected port, do not change here
 
-ser = serial.Serial(PORT_UGV, BAUD_UGV, timeout=0.02) # connect to ports
+try:
+    ser = serial.Serial(PORT_UGV, BAUD_UGV, timeout=0.02) # connect to ports
+except Exception as _e:
+    ser = None
+    logging.warning(f"Serial port {PORT_UGV} unavailable ({_e}) — running without hardware")
 
 stop_event = threading.Event()
 AUTO_MOVE = threading.Thread(target=auto, args=(stop_event,)) # Thread to run the autonomous movement logic
@@ -156,6 +188,14 @@ def autonomous():
         return render_template("autonomous.html")
     except Exception as e:
         app.logger.exception("Autonomous page error")
+        return jsonify(ok=False, error=str(e)), 500
+
+@app.route("/display")
+def display():
+    try:
+        return render_template("display.html")
+    except Exception as e:
+        app.logger.exception("Display page error")
         return jsonify(ok=False, error=str(e)), 500
 
 @app.route("/ping")
