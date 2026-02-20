@@ -19,7 +19,7 @@ BAUD_UGV = 115200 # connected port, do not change here
 
 def main(stop_event):
     ser = serial.Serial(PORT_UGV, BAUD_UGV, timeout=0.02) # connect to ports
-    time.sleep(0.2)
+    time.sleep(0.1)
 
     # Request fast telemetry if firmware supports T=142, cmd=50
     ser.write((json.dumps({"T": 142, "cmd": 50}) + "\n").encode("utf-8"))
