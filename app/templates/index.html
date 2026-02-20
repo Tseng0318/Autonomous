@@ -1,0 +1,506 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BAWA-786 Manual Control</title>
+    <style>
+        @keyframes fadeIn {
+          from {
+            opacity: 0;
+            transform: translateY(20px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+
+        @keyframes glow {
+          0%, 100% {
+            box-shadow: 0 0 20px rgba(46, 204, 113, 0.3);
+          }
+          50% {
+            box-shadow: 0 0 30px rgba(46, 204, 113, 0.6);
+          }
+        }
+
+        @keyframes buttonPulse {
+          0% {
+            transform: scale(1);
+          }
+          50% {
+            transform: scale(1.02);
+          }
+          100% {
+            transform: scale(1);
+          }
+        }
+
+        @keyframes slideInLeft {
+          from {
+            opacity: 0;
+            transform: translateX(-30px);
+          }
+          to {
+            opacity: 1;
+            transform: translateX(0);
+          }
+        }
+
+        @keyframes neonGlow {
+          0%, 100% {
+            text-shadow: 0 0 10px rgba(46, 204, 113, 0.5),
+                        0 0 20px rgba(46, 204, 113, 0.3);
+            box-shadow: 0 0 10px rgba(46, 204, 113, 0.4),
+                       inset 0 0 10px rgba(46, 204, 113, 0.1);
+          }
+          50% {
+            text-shadow: 0 0 20px rgba(46, 204, 113, 0.8),
+                        0 0 30px rgba(46, 204, 113, 0.6);
+            box-shadow: 0 0 20px rgba(46, 204, 113, 0.6),
+                       inset 0 0 10px rgba(46, 204, 113, 0.2);
+          }
+        }
+
+        @keyframes animatedBackground {
+          0% {
+            background-position: 0% 50%;
+          }
+          50% {
+            background-position: 100% 50%;
+          }
+          100% {
+            background-position: 0% 50%;
+          }
+        }
+
+        @keyframes iconBounce {
+          0%, 100% {
+            transform: translateY(0);
+          }
+          50% {
+            transform: translateY(-5px);
+          }
+        }
+
+        * {
+          margin: 0;
+          padding: 0;
+          box-sizing: border-box;
+        }
+
+        body {
+          background: linear-gradient(-45deg, #0f1419, #1a1f2e, #0a0e14, #1a1f2e);
+          background-size: 400% 400%;
+          animation: animatedBackground 15s ease infinite;
+          font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+          color: #e0e0e0;
+          min-height: 100vh;
+          display: flex;
+          justify-content: center;
+          align-items: center;
+          padding: 20px;
+          position: relative;
+          overflow-x: hidden;
+        }
+
+        body::before {
+          content: '';
+          position: fixed;
+          top: 0;
+          left: 0;
+          width: 100%;
+          height: 100%;
+          background: radial-gradient(circle at 20% 50%, rgba(46, 204, 113, 0.08) 0%, transparent 50%),
+                      radial-gradient(circle at 80% 80%, rgba(42, 63, 95, 0.08) 0%, transparent 50%);
+          pointer-events: none;
+          z-index: 0;
+        }
+
+        body::after {
+          content: '';
+          position: fixed;
+          top: 0;
+          left: 0;
+          width: 100%;
+          height: 100%;
+          background-image: 
+              linear-gradient(0deg, transparent 24%, rgba(46, 204, 113, 0.05) 25%, rgba(46, 204, 113, 0.05) 26%, transparent 27%, transparent 74%, rgba(46, 204, 113, 0.05) 75%, rgba(46, 204, 113, 0.05) 76%, transparent 77%, transparent),
+              linear-gradient(90deg, transparent 24%, rgba(46, 204, 113, 0.05) 25%, rgba(46, 204, 113, 0.05) 26%, transparent 27%, transparent 74%, rgba(46, 204, 113, 0.05) 75%, rgba(46, 204, 113, 0.05) 76%, transparent 77%, transparent);
+          background-size: 50px 50px;
+          pointer-events: none;
+          z-index: 0;
+          opacity: 0.3;
+        }
+
+        .container {
+          background: linear-gradient(135deg, #151b28 0%, #1a2236 100%);
+          border: 2px solid #2a3f5f;
+          border-radius: 30px;
+          padding: 40px 30px;
+          width: 100%;
+          max-width: 600px;
+          box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5), 
+                      inset 0 1px 0 rgba(255, 255, 255, 0.1),
+                      0 0 30px rgba(46, 204, 113, 0.1);
+          animation: fadeIn 0.8s ease-out;
+          position: relative;
+          backdrop-filter: blur(10px);
+          z-index: 1;
+        }
+
+        .header {
+          text-align: center;
+          margin-bottom: 30px;
+          animation: fadeIn 1s ease-out 0.2s both;
+        }
+
+        .title {
+          font-size: 54px;
+          font-weight: 300;
+          letter-spacing: 6px;
+          color: #ffffff;
+          margin-bottom: 20px;
+          text-shadow: 0 0 20px rgba(46, 204, 113, 0.3),
+                      0 0 40px rgba(46, 204, 113, 0.15);
+          animation: neonGlow 2s ease-in-out infinite;
+        }
+
+        .status-badge {
+          background: linear-gradient(135deg, #2ecc71 0%, #27ae60 100%);
+          color: #0f1419;
+          padding: 12px 24px;
+          border-radius: 25px;
+          display: inline-block;
+          font-weight: 700;
+          font-size: 14px;
+          letter-spacing: 1px;
+          box-shadow: 0 5px 15px rgba(46, 204, 113, 0.4),
+                     0 0 20px rgba(46, 204, 113, 0.3);
+          animation: glow 3s ease-in-out infinite;
+          border: 1px solid rgba(46, 204, 113, 0.6);
+        }
+
+        .section-title {
+          font-size: 16px;
+          font-weight: 700;
+          letter-spacing: 2px;
+          margin: 25px 0 15px 0;
+          color: #ffffff;
+          text-transform: uppercase;
+          border-bottom: 1px solid rgba(46, 204, 113, 0.2);
+          padding-bottom: 10px;
+          animation: slideInLeft 0.8s ease-out;
+        }
+
+        .controls {
+          display: flex;
+          flex-direction: column;
+          gap: 15px;
+          margin: 20px 0;
+        }
+
+        .movement-grid {
+          display: grid;
+          grid-template-columns: repeat(3, 1fr);
+          gap: 10px;
+          margin-bottom: 20px;
+          animation: fadeIn 1s ease-out 0.4s both;
+        }
+
+        .btn {
+          padding: 12px;
+          border: none;
+          border-radius: 12px;
+          font-size: 13px;
+          font-weight: 600;
+          letter-spacing: 1px;
+          cursor: pointer;
+          transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+          text-transform: uppercase;
+          background: linear-gradient(135deg, #2a3f5f 0%, #3a5f8f 100%);
+          color: #ffffff;
+          position: relative;
+          overflow: hidden;
+          border: 2px solid rgba(46, 204, 113, 0.3);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 6px;
+          box-shadow: 0 0 10px rgba(46, 204, 113, 0.2),
+                     inset 0 0 10px rgba(46, 204, 113, 0.05);
+        }
+
+        .btn::before {
+          content: '';
+          position: absolute;
+          top: 50%;
+          left: 50%;
+          width: 0;
+          height: 0;
+          border-radius: 50%;
+          background: rgba(255, 255, 255, 0.2);
+          transform: translate(-50%, -50%);
+          transition: width 0.6s, height 0.6s;
+        }
+
+        .btn:active::before {
+          width: 300px;
+          height: 300px;
+        }
+
+        .btn:hover {
+          background: linear-gradient(135deg, #3a5f8f 0%, #4a7faf 100%);
+          transform: translateY(-3px);
+          box-shadow: 0 10px 25px rgba(46, 204, 113, 0.3),
+                     0 0 20px rgba(46, 204, 113, 0.4),
+                     inset 0 0 10px rgba(46, 204, 113, 0.1);
+          border-color: rgba(46, 204, 113, 0.8);
+        }
+
+        .btn:active {
+          transform: translateY(-1px);
+          animation: buttonPulse 0.3s ease;
+        }
+
+        .btn-danger {
+          background: linear-gradient(135deg, #c0392b 0%, #e74c3c 100%);
+          color: #ffffff;
+          border: 2px solid rgba(231, 76, 60, 0.3);
+          box-shadow: 0 0 10px rgba(231, 76, 60, 0.2),
+                     inset 0 0 10px rgba(231, 76, 60, 0.05);
+        }
+
+        .btn-danger:hover {
+          background: linear-gradient(135deg, #e74c3c 0%, #ec7063 100%);
+          transform: translateY(-3px);
+          box-shadow: 0 10px 30px rgba(231, 76, 60, 0.4),
+                     0 0 25px rgba(231, 76, 60, 0.5),
+                     inset 0 0 10px rgba(231, 76, 60, 0.15);
+          border-color: rgba(231, 76, 60, 0.8);
+        }
+
+        .btn-success {
+          background: linear-gradient(135deg, #2ecc71 0%, #27ae60 100%);
+          color: #0f1419;
+          border: 2px solid rgba(46, 204, 113, 0.3);
+          box-shadow: 0 0 10px rgba(46, 204, 113, 0.2),
+                     inset 0 0 10px rgba(46, 204, 113, 0.05);
+        }
+
+        .btn-success:hover {
+          background: linear-gradient(135deg, #27ae60 0%, #229954 100%);
+          transform: translateY(-3px);
+          box-shadow: 0 10px 25px rgba(46, 204, 113, 0.3),
+                     0 0 20px rgba(46, 204, 113, 0.4),
+                     inset 0 0 10px rgba(46, 204, 113, 0.1);
+          border-color: rgba(46, 204, 113, 0.6);
+        }
+
+        .servo-section {
+          background: linear-gradient(135deg, rgba(42, 63, 95, 0.4) 0%, rgba(42, 63, 95, 0.2) 100%);
+          padding: 15px;
+          border-radius: 12px;
+          margin: 15px 0;
+          border: 1px solid rgba(46, 204, 113, 0.15);
+          animation: fadeIn 1s ease-out 0.5s both;
+        }
+
+        .servo-input {
+          display: grid;
+          grid-template-columns: 1fr 80px 1fr;
+          gap: 10px;
+          align-items: center;
+          margin-bottom: 12px;
+          animation: slideInLeft 0.6s ease-out;
+        }
+
+        .servo-input label {
+          color: #b0b0b0;
+          font-size: 13px;
+          text-align: right;
+        }
+
+        input[type="number"] {
+          padding: 8px;
+          font-size: 13px;
+          background: linear-gradient(135deg, #1f2937 0%, #263545 100%);
+          border: 2px solid #2a3f5f;
+          border-radius: 6px;
+          color: #ffffff;
+          transition: all 0.3s ease;
+        }
+
+        input[type="number"]:focus {
+          outline: none;
+          border-color: #2ecc71;
+          background: linear-gradient(135deg, #263545 0%, #2a4a5f 100%);
+          box-shadow: 0 0 15px rgba(46, 204, 113, 0.2);
+        }
+
+        .valve-section {
+          background: linear-gradient(135deg, rgba(42, 63, 95, 0.4) 0%, rgba(42, 63, 95, 0.2) 100%);
+          padding: 15px;
+          border-radius: 12px;
+          margin: 15px 0;
+          border: 1px solid rgba(46, 204, 113, 0.15);
+          animation: fadeIn 1s ease-out 0.6s both;
+        }
+
+        .valve-buttons {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 10px;
+          margin: 10px 0;
+        }
+
+        #valve-status {
+          margin-top: 10px;
+          color: #2ecc71;
+          font-size: 13px;
+          text-align: center;
+          animation: fadeIn 0.5s ease-out;
+        }
+
+        .autonomous-btn {
+          width: 100%;
+          background: linear-gradient(135deg, #2ecc71 0%, #27ae60 100%);
+          color: #0f1419;
+          padding: 15px;
+          margin-top: 20px;
+          font-size: 16px;
+          box-shadow: 0 5px 15px rgba(46, 204, 113, 0.3),
+                     0 0 20px rgba(46, 204, 113, 0.2);
+          border: 2px solid rgba(46, 204, 113, 0.3);
+          animation: fadeIn 1s ease-out 0.8s both;
+        }
+
+        .autonomous-btn:hover {
+          background: linear-gradient(135deg, #27ae60 0%, #229954 100%);
+          transform: translateY(-3px);
+          box-shadow: 0 10px 25px rgba(46, 204, 113, 0.4),
+                     0 0 25px rgba(46, 204, 113, 0.5);
+        }
+
+        .autonomous-btn:active {
+          transform: translateY(-1px);
+          animation: buttonPulse 0.3s ease;
+        }
+
+        .footer {
+          text-align: center;
+          margin-top: 30px;
+          font-size: 12px;
+          color: #6b7280;
+          letter-spacing: 1px;
+          animation: fadeIn 1s ease-out 1s both;
+        }
+
+        .icon {
+          font-size: 14px;
+          display: inline-block;
+          animation: iconBounce 2s ease-in-out infinite;
+        }
+
+        .btn:hover .icon {
+          animation: iconBounce 0.6s ease-in-out infinite;
+        }
+    </style>
+</head>
+<body>
+  <div class="container">
+    <!-- Header -->
+    <div class="header">
+      <div class="title">BAWA-786</div>
+      <div class="status-badge">MANUAL MODE</div>
+    </div>
+
+    <!-- Movement Controls -->
+    <div class="section-title">Movement Control</div>
+    <div class="movement-grid">
+      <div></div>
+      <button class="btn" onmousedown="move(0.5, 0.5)" onmouseup="stop()">Forward</button>
+      <div></div>
+      <button class="btn" onmousedown="move(0.5, -0.5)" onmouseup="stop()">Left</button>
+      <button class="btn" onmousedown="stop()">Stop</button>
+      <button class="btn" onmousedown="move(-0.5, 0.5)" onmouseup="stop()">Right</button>
+      <div></div>
+      <button class="btn" onmousedown="move(-0.5, -0.5)" onmouseup="stop()">Backward</button>
+      <div></div>
+    </div>
+
+    <!-- Servo Arm Control -->
+    <div class="section-title">Servo Arm Control</div>
+    <div class="servo-section">
+      <div class="servo-input">
+        <label>Servo 1:</label>
+        <input type="number" id="servo1" min="0" max="180" value="90">
+        <button class="btn" onclick="moveServo(1)">Move</button>
+      </div>
+      <div class="servo-input">
+        <label>Servo 2:</label>
+        <input type="number" id="servo2" min="0" max="180" value="90">
+        <button class="btn" onclick="moveServo(2)">Move</button>
+      </div>
+      <div class="servo-input">
+        <label>Servo 3:</label>
+        <input type="number" id="servo3" min="0" max="180" value="90">
+        <button class="btn" onclick="moveServo(3)">Move</button>
+      </div>
+      <div class="servo-input">
+        <label>Servo 4:</label>
+        <input type="number" id="servo4" min="0" max="180" value="90">
+        <button class="btn" onclick="moveServo(4)">Move</button>
+      </div>
+    </div>
+
+    <!-- Valve Control -->
+    <div class="section-title">Valve Control</div>
+    <div class="valve-section">
+      <div class="valve-buttons">
+        <button class="btn btn-success" onclick="valve('on')"><span class="icon">✅</span> ON</button>
+        <button class="btn btn-danger" onclick="valve('off')"><span class="icon">❌</span> OFF</button>
+      </div>
+      <div id="valve-status"></div>
+    </div>
+
+    <!-- Autonomous Mode Button -->
+    <button class="autonomous-btn" onclick="location.href='/autonomous'"><span class="icon">🤖</span> SWITCH TO AUTONOMOUS MODE</button>
+
+    <!-- Footer -->
+    <div class="footer">COPYRIGHT 2025</div>
+  </div>
+
+  <script>
+    function move(L, R) {
+      fetch(`/move?L=${L}&R=${R}`);
+    }
+    function stop() {
+      fetch(`/move?L=0&R=0`);
+    }
+    function moveServo(num) {
+      const degrees = document.getElementById(`servo${num}`).value;
+      fetch(`/servo?servo=${num}&degrees=${degrees}`);
+    }
+    function valve(state) {
+      fetch(`/valve?state=${state}`)
+        .then(r => r.json())
+        .then(j => {
+          const el = document.getElementById('valve-status');
+          if (!el) return;
+          if (j.ok) {
+            el.textContent = `Valve ${state.toUpperCase()} command sent`;
+          } else {
+            el.textContent = `Error: ${j.error || 'unknown'}`;
+            alert('Valve error: ' + (j.error || 'unknown'));
+          }
+        })
+        .catch(err => {
+          console.error('Valve request failed', err);
+          alert('Valve request failed');
+        });
+    }
+  </script>
+</body>
+</html>

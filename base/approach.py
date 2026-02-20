@@ -24,6 +24,8 @@ from lidar_util import (
 from motion import drive_forward_mm
 from new_rotation import rotate_random_90, rotate_same_90
 from model import detect_rust
+from app.servo_final import generic_spray
+
 #TODO: Import AI and servo functions
 
 SAFETY_STOP_MM  = 150.0   # stop 15 cm in front of detected object (not exactly accurate here)
@@ -64,7 +66,7 @@ def do_one_cycle(ser) -> None:
     elif label == "CORROSION":  #TODO AI FUNCTION: Takes picture, looks for rust
         # Spray and then move forward
         print("[Cycle] Rust Detected: Initiating servo movement")
-        #generic_spray()    #TODO SERVO FUNCTION: Moves servo, activates spray
+        generic_spray()    #TODO SERVO FUNCTION: Moves servo, activates spray
         drive_forward_mm(STEP_FORWARD_DEFAULT_MM)
 
     else:
