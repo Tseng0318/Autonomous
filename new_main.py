@@ -12,7 +12,7 @@ import time
 import serial
 
 from motion import stop
-from new_approach import do_one_cycle
+from approach import do_one_cycle
 
 PORT_UGV = "/dev/ttyACM0" # connected port, do not change here
 BAUD_UGV = 115200 # connected port, do not change here

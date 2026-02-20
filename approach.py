@@ -44,7 +44,7 @@ def do_one_cycle(ser) -> None:
     )
     print(f"[CYCLE] Initial front distance = {d0} mm")
     
-    label, conf, prob = detect_rust
+    label = detect_rust()
 
     # 2) Check if obsticle, initiate rotation logic
     approach_mm = max(0.0, float(d0))
@@ -61,9 +61,10 @@ def do_one_cycle(ser) -> None:
         rotate_same_90(ser, rot_dir)
 
     # 6) Scan for rust
-    elif label == "CORROSION":#TODO AI FUNCTION: Takes picture, looks for rust
+    elif label == "CORROSION":  #TODO AI FUNCTION: Takes picture, looks for rust
+        # Spray and then move forward
         print("[Cycle] Rust Detected: Initiating servo movement")
-        generic_spray()#TODO SERVO FUNCTION: Moves servo, activates spray
+        #generic_spray()    #TODO SERVO FUNCTION: Moves servo, activates spray
         drive_forward_mm(STEP_FORWARD_DEFAULT_MM)
 
     else:
