@@ -39,6 +39,7 @@ def main(stop_event):
         except Exception:
             pass
         ser.close()
+        stop_event.clear()
         print("[MAIN] Serial closed, exiting.")
 
 if __name__ == "__main__":
