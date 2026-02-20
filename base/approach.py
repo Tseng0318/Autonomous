@@ -67,12 +67,12 @@ def do_one_cycle(ser) -> None:
         # Spray and then move forward
         print("[Cycle] Rust Detected: Initiating servo movement")
         generic_spray()    #TODO SERVO FUNCTION: Moves servo, activates spray
-        drive_forward_mm(STEP_FORWARD_DEFAULT_MM)
+        drive_forward_mm(ser,STEP_FORWARD_DEFAULT_MM, label="step")
 
     else:
         # 7) If there is no obsticle, keep move set mm
         print(f"[CYCLE] Approaching ~{approach_mm:.0f} mm to stop at {SAFETY_STOP_MM:.0f} mm.")
         #TODO: Drive Forward using timed Move function
-        drive_forward_mm(STEP_FORWARD_DEFAULT_MM)
+        drive_forward_mm(ser, STEP_FORWARD_DEFAULT_MM, label="step")
 
     
