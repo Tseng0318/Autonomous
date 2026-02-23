@@ -7,9 +7,9 @@ Unified robot controller for your setup:
 """
 
 import sys, os
-# Ensure the workspace root (parent of this app/ folder) is on sys.path
-# so that the 'base' package can be imported regardless of where you run from.
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0, _ROOT)                        # workspace root — makes 'base' importable as a package
+sys.path.insert(1, os.path.join(_ROOT, 'base'))  # base/ itself — so bare imports inside base files work
 
 from flask import Flask, request, render_template, jsonify
 import os, time, glob, logging, requests, json
