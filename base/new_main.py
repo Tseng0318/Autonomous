@@ -17,10 +17,7 @@ from approach import do_one_cycle
 PORT_UGV = "/dev/ttyACM0" # connected port, do not change here
 BAUD_UGV = 115200 # connected port, do not change here
 
-def main(stop_event):
-    ser = serial.Serial(PORT_UGV, BAUD_UGV, timeout=0.02) # connect to ports
-    time.sleep(0.1)
-
+def main(stop_event, ser):
     # Request fast telemetry if firmware supports T=142, cmd=50
     ser.write((json.dumps({"T": 142, "cmd": 50}) + "\n").encode("utf-8"))
     print(f"[MAIN] Connected to UGV on {PORT_UGV} @ {BAUD_UGV}.")

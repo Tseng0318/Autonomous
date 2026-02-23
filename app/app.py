@@ -69,7 +69,8 @@ except Exception as _e:
     logging.warning(f"Serial port {PORT_UGV} unavailable ({_e}) — running without hardware")
 
 stop_event = threading.Event()
-AUTO_MOVE = threading.Thread(target=auto, args=(stop_event,)) # Thread to run the autonomous movement logic
+AUTO_MOVE = None
+
 
 def _auto_serial(pattern, baud):
     '''
@@ -203,6 +204,9 @@ def ping(): return jsonify(ok=True)
 
 @app.route("/move")
 def handle_move():
+    if AUTO_MOVE.is_alive():
+        print("Cannot move manually while autonomous mode is active")
+        return -1
     try:
         L=float(request.args.get("L",0))
         R=float(request.args.get("R",0))
@@ -249,7 +253,10 @@ def start_scan():
     """
     try:
         app.logger.info("[SCAN] Starting autonomous scan...")
-        AUTO_MOVE.start()
+        if AUTO_MOVE is None or not AUTO_MOVE.is_alive():
+            stop_event.clear()
+            AUTO_MOVE = threading.Thread(target=auto, args=(stop_event, ser)) # Thread to run the autonomous movement logic
+            AUTO_MOVE.start()
         # TODO: Add scan initialization logic
         return jsonify(ok=True, status="scan_started")
     except Exception as e:
@@ -264,7 +271,8 @@ def stop_scan():
     try:
         app.logger.info("[SCAN] Stopping scan and robot...")
         stop_event.set()  # Signal the autonomous thread to stop
-        AUTO_MOVE.join(timeout=1.0)  # Wait for the autonomous movement thread to finish
+        if AUTO_MOVE is not None and AUTO_MOVE.is_alive():
+            AUTO_MOVE.join(timeout=1.0)  # Wait for the autonomous movement thread to finish
         # TODO: Add scan cleanup logic
         return jsonify(ok=True, status="scan_stopped")
     except Exception as e:
