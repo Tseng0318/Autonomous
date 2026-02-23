@@ -251,11 +251,12 @@ def start_scan():
     Placeholder for autonomous scanning functionality.
     TODO: Implement actual scan logic here
     """
+    global AUTO_MOVE
     try:
         app.logger.info("[SCAN] Starting autonomous scan...")
         if AUTO_MOVE is None or not AUTO_MOVE.is_alive():
             stop_event.clear()
-            AUTO_MOVE = threading.Thread(target=auto, args=(stop_event, ser)) # Thread to run the autonomous movement logic
+            AUTO_MOVE = threading.Thread(target=auto, args=(stop_event, ser), daemon=True) # Thread to run the autonomous movement logic
             AUTO_MOVE.start()
         # TODO: Add scan initialization logic
         return jsonify(ok=True, status="scan_started")
@@ -268,6 +269,7 @@ def stop_scan():
     """
     Stop the robot and halt autonomous scanning.
     """
+    global AUTO_MOVE
     try:
         app.logger.info("[SCAN] Stopping scan and robot...")
         stop_event.set()  # Signal the autonomous thread to stop
