@@ -313,3 +313,45 @@ body::after {
 .btn:hover .icon {
     animation: iconBounce 0.6s ease-in-out infinite;
 }
+
+.scan-status {
+    text-align: center;
+    font-size: 15px;
+    font-weight: 600;
+    letter-spacing: 1px;
+    color: #2ecc71;
+    margin: -10px 0 20px 0;
+    padding: 10px 20px;
+    border-radius: 10px;
+    background: rgba(46, 204, 113, 0.08);
+    border: 1px solid rgba(46, 204, 113, 0.25);
+    animation: scanPulse 1.5s ease-in-out infinite;
+}
+
+@keyframes scanPulse {
+    0%, 100% { opacity: 1; }
+    50%       { opacity: 0.5; }
+}
+
+.btn-test {
+    background: linear-gradient(135deg, #7d3c98 0%, #9b59b6 100%);
+    color: #ffffff;
+    padding: 15px;
+    border: 2px solid rgba(155, 89, 182, 0.4);
+    box-shadow: 0 0 10px rgba(155, 89, 182, 0.2),
+               inset 0 0 10px rgba(155, 89, 182, 0.05);
+}
+
+.btn-test:hover {
+    background: linear-gradient(135deg, #9b59b6 0%, #bb8cd8 100%);
+    transform: translateY(-3px);
+    box-shadow: 0 10px 25px rgba(155, 89, 182, 0.4),
+               0 0 20px rgba(155, 89, 182, 0.5),
+               inset 0 0 10px rgba(155, 89, 182, 0.1);
+    border-color: rgba(155, 89, 182, 0.9);
+}
+
+.btn-test:active {
+    transform: translateY(-1px);
+    animation: buttonPulse 0.3s ease;
+}

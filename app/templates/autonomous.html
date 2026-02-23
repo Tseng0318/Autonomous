@@ -21,11 +21,15 @@
             <button class="btn btn-secondary" id="stopBtn"><span class="icon">⏹️</span> STOP SCAN</button>
         </div>
 
+        <!-- Scan Status Message -->
+        <div id="scanStatus" class="scan-status" style="display:none;">🔍 Searching for rust...</div>
+
         <!-- Emergency Stop -->
         <button class="btn btn-secondary" id="emergencyBtn"><span class="icon">🏠</span> RETURN TO BASE</button>
 
         <!-- Bottom Buttons -->
         <div class="button-bottom">
+            <button class="btn btn-test" id="testBtn"><span class="icon">🧪</span> START TEST</button>
             <button class="btn btn-manual" id="manualBtn"><span class="icon">🎮</span> SWITCH TO MANUAL MODE</button>
         </div>
     </div>
@@ -33,14 +37,22 @@
     <script>
         document.getElementById('startBtn').addEventListener('click', () => {
             fetch('/start_scan').then(r => r.json()).then(d => console.log(d));
+            document.getElementById('scanStatus').style.display = 'block';
         });
 
         document.getElementById('stopBtn').addEventListener('click', () => {
             fetch('/stop_scan').then(r => r.json()).then(d => console.log(d));
+            document.getElementById('scanStatus').style.display = 'none';
+        });
+
+        document.getElementById('testBtn').addEventListener('click', () => {
+            // Start test logic to be implemented
+            console.log('Start test clicked');
         });
 
         document.getElementById('emergencyBtn').addEventListener('click', () => {
             fetch('/return_to_base').then(r => r.json()).then(d => console.log(d));
+            document.getElementById('scanStatus').style.display = 'none';
         });
 
         document.getElementById('manualBtn').addEventListener('click', () => {
