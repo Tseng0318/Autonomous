@@ -4,7 +4,10 @@
 
 '''
 
+from gpiozero import Device
+from gpiozero.pins.lgpio import LGPIOFactory
 
+Device.pin_factory = LGPIOFactory()
 from gpiozero import AngularServo
 from time import sleep
 import time
