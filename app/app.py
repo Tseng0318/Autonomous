@@ -38,7 +38,8 @@ try:
     from base.new_main import main as auto
 except Exception as _e:
     logging.warning(f"base.new_main unavailable ({_e}) — autonomous mode disabled")
-    def auto(stop_event): pass
+    def auto(stop_event, ser=None):
+        pass
 
 
 app = Flask(__name__, template_folder="templates")
@@ -70,6 +71,15 @@ except Exception as _e:
 
 stop_event = threading.Event()
 AUTO_MOVE = None
+
+
+def _run_auto_thread():
+    try:
+        auto(stop_event, ser)
+    except Exception as e:
+        app.logger.exception(f"[AUTO] Autonomous thread crashed: {e}")
+    finally:
+        stop_event.set()
 
 
 def _auto_serial(pattern, baud):
@@ -204,7 +214,7 @@ def ping(): return jsonify(ok=True)
 
 @app.route("/move")
 def handle_move():
-    if AUTO_MOVE.is_alive():
+    if AUTO_MOVE is not None and AUTO_MOVE.is_alive():
         print("Cannot move manually while autonomous mode is active")
         return -1
     try:
@@ -254,10 +264,15 @@ def start_scan():
     global AUTO_MOVE
     try:
         app.logger.info("[SCAN] Starting autonomous scan...")
+        if ser is None or not ser.is_open:
+            return jsonify(ok=False, error="UGV serial is not connected"), 500
         if AUTO_MOVE is None or not AUTO_MOVE.is_alive():
             stop_event.clear()
-            AUTO_MOVE = threading.Thread(target=auto, args=(stop_event, ser), daemon=True) # Thread to run the autonomous movement logic
+            AUTO_MOVE = threading.Thread(target=_run_auto_thread, daemon=True) # Thread to run the autonomous movement logic
             AUTO_MOVE.start()
+            app.logger.info("[SCAN] Autonomous thread started")
+        else:
+            app.logger.info("[SCAN] Autonomous thread already running")
         # TODO: Add scan initialization logic
         return jsonify(ok=True, status="scan_started")
     except Exception as e:
