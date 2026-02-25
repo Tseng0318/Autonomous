@@ -18,28 +18,11 @@ import threading
 # --- Hardware availability flag (False on Windows / non-Pi environments) ---
 HARDWARE_AVAILABLE = True
 
-try:
-    import serial
-except ImportError:
-    serial = None
-    HARDWARE_AVAILABLE = False
-    logging.warning("pyserial not available — serial hardware disabled")
+import serial
 
-try:
-    from servo_final import set_angle, setup_servo, cleanup
-except Exception as _e:
-    HARDWARE_AVAILABLE = False
-    logging.warning(f"servo_final unavailable ({_e}) — servo hardware disabled")
-    def set_angle(servo_num, angle): pass
-    def setup_servo(): pass
-    def cleanup(): pass
+from servo_final import set_angle, setup_servo, cleanup
+from base.new_main import main as auto
 
-try:
-    from base.new_main import main as auto
-except Exception as _e:
-    logging.warning(f"base.new_main unavailable ({_e}) — autonomous mode disabled")
-    def auto(stop_event, ser=None):
-        pass
 
 
 app = Flask(__name__, template_folder="templates")
@@ -63,11 +46,8 @@ REQUIRE_INDEX    = True
 PORT_UGV = "/dev/ttyACM0" # connected port, do not change here
 BAUD_UGV = 115200 # connected port, do not change here
 
-try:
-    ser = serial.Serial(PORT_UGV, BAUD_UGV, timeout=0.02) # connect to ports
-except Exception as _e:
-    ser = None
-    logging.warning(f"Serial port {PORT_UGV} unavailable ({_e}) — running without hardware")
+ser = serial.Serial(PORT_UGV, BAUD_UGV, timeout=0.02) # connect to ports
+
 
 stop_event = threading.Event()
 AUTO_MOVE = None
@@ -78,8 +58,6 @@ def _run_auto_thread():
         auto(stop_event, ser)
     except Exception as e:
         app.logger.exception(f"[AUTO] Autonomous thread crashed: {e}")
-    finally:
-        stop_event.set()
 
 
 def _auto_serial(pattern, baud):
