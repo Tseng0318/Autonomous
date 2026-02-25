@@ -23,13 +23,13 @@ try:
 except ImportError:
     serial = None
     HARDWARE_AVAILABLE = False
-    logging.warning("pyserial not available — serial hardware disabled")
+    print("pyserial not available — serial hardware disabled")
 
 try:
     from servo_final import set_angle, setup_servo, cleanup
 except Exception as _e:
     HARDWARE_AVAILABLE = False
-    logging.warning(f"servo_final unavailable ({_e}) — servo hardware disabled")
+    print(f"servo_final unavailable ({_e}) — servo hardware disabled")
     def set_angle(servo_num, angle): pass
     def setup_servo(): pass
     def cleanup(): pass
@@ -37,7 +37,7 @@ except Exception as _e:
 try:
     from base.new_main import main as auto
 except Exception as _e:
-    logging.warning(f"base.new_main unavailable ({_e}) — autonomous mode disabled")
+    print(f"base.new_main unavailable ({_e}) — autonomous mode disabled")
     def auto(stop_event, ser=None):
         pass
 
@@ -67,7 +67,7 @@ try:
     ser = serial.Serial(PORT_UGV, BAUD_UGV, timeout=0.02) # connect to ports
 except Exception as _e:
     ser = None
-    logging.warning(f"Serial port {PORT_UGV} unavailable ({_e}) — running without hardware")
+    print(f"Serial port {PORT_UGV} unavailable ({_e}) — running without hardware")
 
 stop_event = threading.Event()
 AUTO_MOVE = None
