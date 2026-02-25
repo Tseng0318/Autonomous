@@ -1,3 +1,10 @@
+'''
+    Servo control for arm.
+    Contains control and calculation functions.
+
+'''
+
+
 from gpiozero import AngularServo
 from time import sleep
 import time
