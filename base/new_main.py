@@ -19,6 +19,7 @@ BAUD_UGV = 115200 # connected port, do not change here
 
 def main(stop_event, ser):
     # Request fast telemetry if firmware supports T=142, cmd=50
+    print("starting auto")
     ser.write((json.dumps({"T": 142, "cmd": 50}) + "\n").encode("utf-8"))
     print(f"[MAIN] Connected to UGV on {PORT_UGV} @ {BAUD_UGV}.")
 
