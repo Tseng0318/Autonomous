@@ -20,7 +20,7 @@ HARDWARE_AVAILABLE = True
 
 import serial
 
-from servo_final import set_angle, setup_servo, cleanup
+from app.servo_final import set_angle, setup_servo, cleanup
 from base.new_main import main as auto
 
 
