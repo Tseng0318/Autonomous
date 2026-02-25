@@ -290,12 +290,13 @@ def return_to_base():
         return jsonify(ok=False, error=str(e)), 500
 
 if __name__=="__main__":
-
-    setup_servo()
-    app.run(host="0.0.0.0",port=5000)
-    if ser is not None and ser.is_open:
-        ser.close()
-    if AUTO_MOVE is not None and AUTO_MOVE.is_alive():
-        stop_event.set()
-        AUTO_MOVE.join(timeout=1.0)
-    cleanup()
+    try:
+        setup_servo()
+        app.run(host="0.0.0.0",port=5000)
+    except KeyboardInterrupt:
+        if ser is not None and ser.is_open:
+            ser.close()
+        if AUTO_MOVE is not None and AUTO_MOVE.is_alive():
+            stop_event.set()
+            AUTO_MOVE.join(timeout=1.0)
+        cleanup()
