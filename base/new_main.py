@@ -10,6 +10,7 @@
 import json
 import time
 import serial
+import threading
 
 from motion import stop
 from approach import do_one_cycle
@@ -41,5 +42,6 @@ def main(stop_event, ser):
 
 if __name__ == "__main__":
     ser = serial.Serial(PORT_UGV, BAUD_UGV, timeout=0.02) # connect to ports
-    stop_event = False
-    main()
+    stop_event = threading.Event()
+    stop_event.clear() # set the event to indicate running
+    main(stop_event, ser)
