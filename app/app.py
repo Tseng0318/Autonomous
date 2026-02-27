@@ -50,7 +50,7 @@ ser = serial.Serial(PORT_UGV, BAUD_UGV, timeout=0.02) # connect to ports
 
 
 stop_event = threading.Event()
-AUTO_MOVE = threading.Thread(target=_run_auto_thread, daemon=True) # Thread to run the autonomous movement logic    
+AUTO_MOVE = None
 
 
 def _run_auto_thread():
@@ -240,6 +240,9 @@ def start_scan():
     TODO: Implement actual scan logic here
     """
     global AUTO_MOVE
+    if AUTO_MOVE is not None and AUTO_MOVE.is_alive():
+        print("Autonomous scan already running")
+        return -1
     try:
         app.logger.info("[SCAN] Starting autonomous scan...")
         if ser is None or not ser.is_open:
