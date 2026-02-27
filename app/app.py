@@ -294,7 +294,7 @@ def return_to_base():
 if __name__=="__main__":
     try:
         setup_servo()
-        app.run(host="0.0.0.0",port=5000)
+        app.run(host="0.0.0.0",port=5000, threaded=True, debug=False, use_reloader=False)
     except KeyboardInterrupt:
         if ser is not None and ser.is_open:
             ser.close()
