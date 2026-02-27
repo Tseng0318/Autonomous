@@ -76,7 +76,7 @@ def get_front_distance_once(
     max_range_mm: int = DETECTION_RANGE_MM,
     min_points: int = MIN_POINTS_IN_WINDOW,
     min_valid_mm: int = MIN_VALID_MM,
-    spinup_s: float = 1.0,
+    spinup_s: float = 2.0,
     max_scan_batches: int = MAX_SCAN_BATCHES,
     max_time_s: float = MAX_TIME_S,
     chassis_mask_deg: float | None = CHASSIS_MASK_DEG,
@@ -103,6 +103,19 @@ def get_front_distance_once(
         try:
             with LIDAR_SCAN_LOCK:
                 lidar = RPLidar(dev_port, baudrate=BAUD, timeout=3)
+
+                # HARD RESET SEQUENCE
+                try:
+                    lidar.stop()
+                except:
+                    pass
+
+                sleep(0.2)
+
+                lidar.clear_input()
+                lidar._serial.reset_input_buffer()
+                lidar._serial.reset_output_buffer()
+
                 lidar.start_motor()
                 sleep(spinup_s)
 
