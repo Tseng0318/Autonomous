@@ -13,6 +13,13 @@ import serial
 
 from motion import stop
 from approach import do_one_cycle
+from lidar_util import (
+    get_front_distance_once,
+    FRONT_BEARING_DEG,
+    FRONT_WINDOW_DEG,
+    DETECTION_RANGE_MM,
+)
+
 
 PORT_UGV = "/dev/ttyACM0" # connected port, do not change here
 BAUD_UGV = 115200 # connected port, do not change here
@@ -24,9 +31,11 @@ def main(stop_event, ser):
     print(f"[MAIN] Connected to UGV on {PORT_UGV} @ {BAUD_UGV}.")
 
     try:
-        while not stop_event.is_set():
-            do_one_cycle(ser) # perform the preset path logic
-            time.sleep(1.0)  # small pause between cycles
+        d0 = get_front_distance_once(
+            target_bearing_deg=FRONT_BEARING_DEG,
+            window_deg=FRONT_WINDOW_DEG,
+            max_range_mm=DETECTION_RANGE_MM,
+        )
 
     except KeyboardInterrupt:
         print("\n[MAIN] Ctrl+C received, stopping.")
