@@ -4,6 +4,7 @@
 
 import math
 import statistics
+import threading
 from time import sleep, monotonic
 from rplidar import RPLidar, RPLidarException
 
@@ -34,6 +35,8 @@ MIN_VALID_MM = 80
 # Mask a tiny band around 0 ONLY if chassis causes reflections
 # this is not necessary now
 CHASSIS_MASK_DEG = None   # e.g. 2.0 if needed
+
+LIDAR_SCAN_LOCK = threading.Lock()
 
 
 def _ang_diff(a_deg: float, b_deg: float) -> float:
@@ -74,64 +77,65 @@ def get_front_distance_once(
     lidar = None
 
     try:
-        lidar = RPLidar(dev_port, baudrate=BAUD, timeout=3)
-        lidar.start_motor()
-        sleep(spinup_s)
+        with LIDAR_SCAN_LOCK:
+            lidar = RPLidar(dev_port, baudrate=BAUD, timeout=3)
+            lidar.start_motor()
+            sleep(spinup_s)
 
-        window_vals: list[float] = []
-        nearest_overall: float | None = None
+            window_vals: list[float] = []
+            nearest_overall: float | None = None
 
-        t0 = monotonic()
-        batches = 0
+            t0 = monotonic()
+            batches = 0
 
-        for scan in lidar.iter_scans(min_len=5):
-            batches += 1
+            for scan in lidar.iter_scans(min_len=5):
+                batches += 1
 
-            for quality, angle_deg, dist_mm in scan:
-                if not dist_mm:
-                    continue
+                for quality, angle_deg, dist_mm in scan:
+                    if not dist_mm:
+                        continue
 
-                d = float(dist_mm)
-                if d <= min_valid_mm or d > max_range_mm:
-                    continue
+                    d = float(dist_mm)
+                    if d <= min_valid_mm or d > max_range_mm:
+                        continue
 
-                a = float(angle_deg) % 360.0
+                    a = float(angle_deg) % 360.0
 
-                # Track nearest overall (last resort)
-                if nearest_overall is None or d < nearest_overall:
-                    nearest_overall = d
+                    # Track nearest overall (last resort)
+                    if nearest_overall is None or d < nearest_overall:
+                        nearest_overall = d
 
-                # Front window collection
-                if abs(_ang_diff(a, target_bearing_deg)) <= window_deg:
-                    if chassis_mask_deg is not None:
-                        if _masked(a, target_bearing_deg, chassis_mask_deg):
-                            continue
-                    window_vals.append(d)
+                    # Front window collection
+                    if abs(_ang_diff(a, target_bearing_deg)) <= window_deg:
+                        if chassis_mask_deg is not None:
+                            if _masked(a, target_bearing_deg, chassis_mask_deg):
+                                continue
+                        window_vals.append(d)
 
-            # Enough front points return median
-            if len(window_vals) >= min_points:
-                d_med = int(round(statistics.median(window_vals)))
+                # Enough front points return median
+                if len(window_vals) >= min_points:
+                    d_med = int(round(statistics.median(window_vals)))
+                    print(
+                        f"[LiDAR] Front @{target_bearing_deg:.1f} {window_deg:.1f} "
+                        f"hits={len(window_vals)} batches={batches}  {d_med} mm"
+                    )
+                    return d_med
+                # Stop conditions
+                if batches >= max_scan_batches:
+                    break
+                if (monotonic() - t0) >= max_time_s:
+                    break
+
+            # Last-resort only 
+            if nearest_overall is not None:
+                d_fb = int(round(nearest_overall))
                 print(
-                    f"[LiDAR] Front @{target_bearing_deg:.1f} {window_deg:.1f} "
-                    f"hits={len(window_vals)} batches={batches}  {d_med} mm"
+                    f"[LiDAR] Not enough front hits (hits={len(window_vals)} batches={batches}); "
+                    f"nearest overall = {d_fb} mm"
                 )
-                return d_med
-            # Stop conditions
-            if batches >= max_scan_batches:
-                break
-            if (monotonic() - t0) >= max_time_s:
-                break
+                return d_fb
 
-        # Last-resort only 
-        if nearest_overall is not None:
-            d_fb = int(round(nearest_overall))
-            print(
-                f"[LiDAR] Not enough front hits (hits={len(window_vals)} batches={batches}); "
-                f"nearest overall = {d_fb} mm"
-            )
-            return d_fb
-
-        raise RuntimeError("No valid LiDAR data collected.")
+            raise RuntimeError("No valid LiDAR data collected.")
 
     except RPLidarException as e:
         raise RuntimeError(f"LiDAR error: {e}")
