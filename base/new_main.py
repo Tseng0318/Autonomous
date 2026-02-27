@@ -40,4 +40,7 @@ def main(stop_event, ser):
         print("[MAIN] Serial closed, exiting.")
 
 if __name__ == "__main__":
+    ser = serial.Serial(PORT_UGV, BAUD_UGV, timeout=0.02) # connect to ports
+    stop_event = False
+    main(stop_event, ser)
     main()

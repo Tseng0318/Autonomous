@@ -113,9 +113,6 @@ def get_front_distance_once(
                 sleep(0.2)
 
                 lidar.clear_input()
-                lidar._serial.reset_input_buffer()
-                lidar._serial.reset_output_buffer()
-
                 lidar.start_motor()
                 sleep(spinup_s)
 
