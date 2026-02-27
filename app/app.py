@@ -51,6 +51,7 @@ ser = serial.Serial(PORT_UGV, BAUD_UGV, timeout=0.02) # connect to ports
 
 stop_event = threading.Event()
 AUTO_MOVE = None
+SCAN_THREAD_LOCK = threading.Lock()
 
 
 def _run_auto_thread():
@@ -240,20 +241,18 @@ def start_scan():
     TODO: Implement actual scan logic here
     """
     global AUTO_MOVE
-    if AUTO_MOVE is not None and AUTO_MOVE.is_alive():
-        print("Autonomous scan already running")
-        return -1
     try:
-        app.logger.info("[SCAN] Starting autonomous scan...")
-        if ser is None or not ser.is_open:
-            return jsonify(ok=False, error="UGV serial is not connected"), 500
-        if AUTO_MOVE is None or not AUTO_MOVE.is_alive():
-            stop_event.clear()
-            AUTO_MOVE = threading.Thread(target=_run_auto_thread, daemon=True) # Thread to run the autonomous movement logic
-            AUTO_MOVE.start()
-            app.logger.info("[SCAN] Autonomous thread started")
-        else:
-            app.logger.info("[SCAN] Autonomous thread already running")
+        with SCAN_THREAD_LOCK:
+            app.logger.info("[SCAN] Starting autonomous scan...")
+            if ser is None or not ser.is_open:
+                return jsonify(ok=False, error="UGV serial is not connected"), 500
+            if AUTO_MOVE is None or not AUTO_MOVE.is_alive():
+                stop_event.clear()
+                AUTO_MOVE = threading.Thread(target=_run_auto_thread, daemon=True) # Thread to run the autonomous movement logic
+                AUTO_MOVE.start()
+                app.logger.info("[SCAN] Autonomous thread started")
+            else:
+                app.logger.info("[SCAN] Autonomous thread already running")
         # TODO: Add scan initialization logic
         return jsonify(ok=True, status="scan_started")
     except Exception as e:

@@ -28,6 +28,8 @@ MIN_POINTS_IN_WINDOW = 10
 # How much data to collect before deciding
 MAX_SCAN_BATCHES = 12
 MAX_TIME_S = 2.0
+MAX_DESCRIPTOR_RETRIES = 3
+RETRY_BACKOFF_S = 0.25
 
 # Reject unrealistically close junk returns
 MIN_VALID_MM = 80
@@ -48,6 +50,23 @@ def _masked(angle_deg: float, center_deg: float, half_width_deg: float) -> bool:
     return abs(_ang_diff(angle_deg, center_deg)) <= half_width_deg
 
 
+def _shutdown_lidar(lidar: RPLidar | None) -> None:
+    if lidar is None:
+        return
+    try:
+        lidar.stop()
+    except Exception:
+        pass
+    try:
+        lidar.stop_motor()
+    except Exception:
+        pass
+    try:
+        lidar.disconnect()
+    except Exception:
+        pass
+
+
 
 # MAIN function in this module
 def get_front_distance_once(
@@ -61,6 +80,8 @@ def get_front_distance_once(
     max_scan_batches: int = MAX_SCAN_BATCHES,
     max_time_s: float = MAX_TIME_S,
     chassis_mask_deg: float | None = CHASSIS_MASK_DEG,
+    max_descriptor_retries: int = MAX_DESCRIPTOR_RETRIES,
+    retry_backoff_s: float = RETRY_BACKOFF_S,
 ) -> int:
     """
     Robust front distance estimate.
@@ -74,83 +95,79 @@ def get_front_distance_once(
       distance_mm (int)
     """
     dev_port = PORT if port is None else port
-    lidar = None
+    last_error: Exception | None = None
+    retries = max(1, int(max_descriptor_retries))
 
-    try:
-        with LIDAR_SCAN_LOCK:
-            lidar = RPLidar(dev_port, baudrate=BAUD, timeout=3)
-            lidar.start_motor()
-            sleep(spinup_s)
+    for attempt in range(1, retries + 1):
+        lidar = None
+        try:
+            with LIDAR_SCAN_LOCK:
+                lidar = RPLidar(dev_port, baudrate=BAUD, timeout=3)
+                lidar.start_motor()
+                sleep(spinup_s)
 
-            window_vals: list[float] = []
-            nearest_overall: float | None = None
+                window_vals: list[float] = []
+                nearest_overall: float | None = None
 
-            t0 = monotonic()
-            batches = 0
+                t0 = monotonic()
+                batches = 0
 
-            for scan in lidar.iter_scans(min_len=5):
-                batches += 1
+                for scan in lidar.iter_scans(min_len=5):
+                    batches += 1
 
-                for quality, angle_deg, dist_mm in scan:
-                    if not dist_mm:
-                        continue
+                    for quality, angle_deg, dist_mm in scan:
+                        if not dist_mm:
+                            continue
 
-                    d = float(dist_mm)
-                    if d <= min_valid_mm or d > max_range_mm:
-                        continue
+                        d = float(dist_mm)
+                        if d <= min_valid_mm or d > max_range_mm:
+                            continue
 
-                    a = float(angle_deg) % 360.0
+                        a = float(angle_deg) % 360.0
 
-                    # Track nearest overall (last resort)
-                    if nearest_overall is None or d < nearest_overall:
-                        nearest_overall = d
+                        if nearest_overall is None or d < nearest_overall:
+                            nearest_overall = d
 
-                    # Front window collection
-                    if abs(_ang_diff(a, target_bearing_deg)) <= window_deg:
-                        if chassis_mask_deg is not None:
-                            if _masked(a, target_bearing_deg, chassis_mask_deg):
+                        if abs(_ang_diff(a, target_bearing_deg)) <= window_deg:
+                            if chassis_mask_deg is not None and _masked(a, target_bearing_deg, chassis_mask_deg):
                                 continue
-                        window_vals.append(d)
+                            window_vals.append(d)
 
-                # Enough front points return median
-                if len(window_vals) >= min_points:
-                    d_med = int(round(statistics.median(window_vals)))
+                    if len(window_vals) >= min_points:
+                        d_med = int(round(statistics.median(window_vals)))
+                        print(
+                            f"[LiDAR] Front @{target_bearing_deg:.1f} {window_deg:.1f} "
+                            f"hits={len(window_vals)} batches={batches}  {d_med} mm"
+                        )
+                        return d_med
+
+                    if batches >= max_scan_batches:
+                        break
+                    if (monotonic() - t0) >= max_time_s:
+                        break
+
+                if nearest_overall is not None:
+                    d_fb = int(round(nearest_overall))
                     print(
-                        f"[LiDAR] Front @{target_bearing_deg:.1f} {window_deg:.1f} "
-                        f"hits={len(window_vals)} batches={batches}  {d_med} mm"
+                        f"[LiDAR] Not enough front hits (hits={len(window_vals)} batches={batches}); "
+                        f"nearest overall = {d_fb} mm"
                     )
-                    return d_med
-                # Stop conditions
-                if batches >= max_scan_batches:
-                    break
-                if (monotonic() - t0) >= max_time_s:
-                    break
+                    return d_fb
 
-            # Last-resort only 
-            if nearest_overall is not None:
-                d_fb = int(round(nearest_overall))
-                print(
-                    f"[LiDAR] Not enough front hits (hits={len(window_vals)} batches={batches}); "
-                    f"nearest overall = {d_fb} mm"
-                )
-                return d_fb
+                raise RuntimeError("No valid LiDAR data collected.")
 
-            raise RuntimeError("No valid LiDAR data collected.")
+        except RPLidarException as e:
+            last_error = e
+            msg = str(e).lower()
+            descriptor_error = "descriptor" in msg and "mismatch" in msg
+            if descriptor_error and attempt < retries:
+                print(f"[LiDAR] Descriptor mismatch, retrying ({attempt}/{retries})...")
+                sleep(retry_backoff_s)
+                continue
+            raise RuntimeError(f"LiDAR error: {e}") from e
+        finally:
+            _shutdown_lidar(lidar)
 
-    except RPLidarException as e:
-        raise RuntimeError(f"LiDAR error: {e}")
-
-    finally:
-        if lidar is not None:
-            try:
-                lidar.stop()
-            except Exception:
-                pass
-            try:
-                lidar.stop_motor()
-            except Exception:
-                pass
-            try:
-                lidar.disconnect()
-            except Exception:
-                pass
+    if last_error is not None:
+        raise RuntimeError(f"LiDAR error after retries: {last_error}") from last_error
+    raise RuntimeError("LiDAR error after retries.")
