@@ -4,7 +4,7 @@ import math
 import app.logger
 
 # BCM pin numbers for 4 servos
-servo_pins = [12, 11, 13, 15]
+servo_pins = [12, 11, 13, 10]
 pwms = []  # list to store PWM objects for each servo
 L1, L2 = 10.0, 10.0  # lengths of arm segments
 
