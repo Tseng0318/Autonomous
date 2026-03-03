@@ -104,7 +104,7 @@ def detect_rust():
     print(f"Predicted class: {label}")
     print(f"Confidence:      {conf:.4f}")
     print(f"Probabilities:   {probs}")
-    return label
+    return label, conf, probs
 
 if __name__ == "__main__":
     detect_rust()

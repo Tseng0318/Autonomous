@@ -24,7 +24,12 @@ from lidar_util import (
 from motion import drive_forward_mm
 from new_rotation import rotate_random_90, rotate_same_90
 from model import detect_rust
-#from app.servo_final import generic_spray
+import numpy as np 
+import threading
+
+
+from app.servo_final import generic_spray
+from app.app import AI_LOCK, label, conf, probs, AI_CHANGED
 
 #TODO: Import AI and servo functions
 
@@ -37,6 +42,7 @@ def do_one_cycle(ser) -> None:
     Perform a single behaviour cycle using LiDAR + odometry.
     """
     print("\n=== NEW CYCLE Start ===")
+    global label, conf, probs
 
     # 1) Measure front distance 
     d0 = get_front_distance_once(
@@ -46,7 +52,9 @@ def do_one_cycle(ser) -> None:
     )
     print(f"[CYCLE] Initial front distance = {d0} mm")
     
-    label, conf, probs = detect_rust()
+    with AI_LOCK:
+        label, conf, probs = detect_rust()
+        AI_CHANGED.set()  # Signal that AI results are updated
 
     # 2) Check if obsticle, initiate rotation logic
     approach_mm = max(0.0, float(d0))
@@ -66,7 +74,7 @@ def do_one_cycle(ser) -> None:
     elif label == "CORROSION":  #TODO AI FUNCTION: Takes picture, looks for rust
         # Spray and then move forward
         print("[Cycle] Rust Detected: Initiating servo movement")
-        #generic_spray()    #TODO SERVO FUNCTION: Moves servo, activates spray
+        generic_spray()    #TODO SERVO FUNCTION: Moves servo, activates spray
         drive_forward_mm(ser,STEP_FORWARD_DEFAULT_MM, label="step")
 
     else:

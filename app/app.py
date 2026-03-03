@@ -14,6 +14,7 @@ sys.path.insert(1, os.path.join(_ROOT, 'base'))  # base/ itself — so bare impo
 from flask import Flask, request, render_template, jsonify
 import os, time, glob, logging, requests, json
 import threading
+import numpy as np
 
 # --- Hardware availability flag (False on Windows / non-Pi environments) ---
 HARDWARE_AVAILABLE = True
@@ -52,6 +53,21 @@ ser = serial.Serial(PORT_UGV, BAUD_UGV, timeout=0.02) # connect to ports
 stop_event = threading.Event()
 AUTO_MOVE = None
 SCAN_THREAD_LOCK = threading.Lock()
+
+label, conf, probs = "", 0.0, np.array([])  #For AI Model results
+AI_LOCK = threading.Lock()
+
+AI_MODEL_THREAD = None
+AI_CHANGED = threading.Event()
+AI_DISPLAY_STOP = threading.Event()
+
+def display():
+    global label, conf, probs
+    while not AI_DISPLAY_STOP.is_set():
+        AI_CHANGED.wait()  # Wait until AI has new results
+        with AI_LOCK:
+            print("\n=== Display Update ===")
+            #TODO: ADD DISPLAY LOGIC HERE (e.g. update a web page, send to a dashboard, etc.)
 
 
 def _run_auto_thread():
@@ -117,27 +133,7 @@ def move_base(L,R):
         raise ValueError("Speeds must be between -1 and 1")
     msg = {"T": 1, "L": L, "R": R}
     ser.write((json.dumps(msg) + "\n").encode("utf-8"))
-    
-    
-    '''
-    url=f"{BASE_HOST.rstrip('/')}{BASE_MOVE_PATH}"
-    app.logger.info(f"[BASE] → {url}  L={L}  R={R}")
-    payload = {"T": 1, "L": L, "R": R}
-    json_str = json.dumps(payload)
-    url = BASE_HOST + "/js?json=" + json_str
-    print(url)
-    response = requests.get(url)
-    print(response)
-    '''
-    
 
-    '''
-    if BASE_METHOD.upper()=="GET":
-        r=requests.get(url,params={"T":1,"L":L,"R":R},headers=_base_headers(),timeout=BASE_TIMEOUT_S)
-    else:
-        r=requests.post(url,json={"T":1,"L":L,"R":R},headers=_base_headers(),timeout=BASE_TIMEOUT_S)
-    r.raise_for_status()
-    '''
 
 # Arm (Servo + Valve)
 def move_servo(servo_num:int, angle:int):
@@ -294,6 +290,8 @@ def return_to_base():
 if __name__=="__main__":
     try:
         #setup_servo()
+        AI_MODEL_THREAD = threading.Thread(target=display, daemon=True) # Thread to handle AI result display
+        AI_MODEL_THREAD.start()
         app.run(host="0.0.0.0",port=5000, threaded=True, debug=False, use_reloader=False)
     except KeyboardInterrupt:
         if ser is not None and ser.is_open:
@@ -301,4 +299,7 @@ if __name__=="__main__":
         if AUTO_MOVE is not None and AUTO_MOVE.is_alive():
             stop_event.set()
             AUTO_MOVE.join(timeout=1.0)
+        if AI_MODEL_THREAD is not None and AI_MODEL_THREAD.is_alive():
+            AI_DISPLAY_STOP.set()  # Unblock display thread if waiting
+            AI_MODEL_THREAD.join(timeout=1.0)
         #cleanup()
