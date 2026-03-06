@@ -329,13 +329,8 @@ def return_to_base():
 
 if __name__=="__main__":
     try:
-<<<<<<< HEAD
         #setup_servo()
         AI_MODEL_THREAD = threading.Thread(target=_ai_display_worker, daemon=True) # Thread to handle AI result display
-=======
-        setup_servo()
-        AI_MODEL_THREAD = threading.Thread(target=display, daemon=True) # Thread to handle AI result display
->>>>>>> 0142534c98f239fffde041e9ce1f052f373576fa
         AI_MODEL_THREAD.start()
         app.run(host="0.0.0.0",port=5000, threaded=True, debug=False, use_reloader=False)
     except KeyboardInterrupt:

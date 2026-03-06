@@ -52,7 +52,6 @@ def do_one_cycle(ser) -> None:
         max_range_mm=DETECTION_RANGE_MM,
     )
     print(f"[CYCLE] Initial front distance = {d0} mm")
-<<<<<<< HEAD
 
     _lbl, _conf, _probs = detect_rust()
     with _app.AI_LOCK:
@@ -60,13 +59,6 @@ def do_one_cycle(ser) -> None:
         _app.conf  = _conf
         _app.probs = _probs
         _app.AI_CHANGED.set()  # Signal that AI results are updated
-=======
-    
-    # For AI Display 
-    with AI_LOCK:
-        label, conf, probs = detect_rust()
-        AI_CHANGED.set()  # Signal that AI results are updated
->>>>>>> 0142534c98f239fffde041e9ce1f052f373576fa
 
     # 2) Check if obsticle, initiate rotation logic
     approach_mm = max(0.0, float(d0))
