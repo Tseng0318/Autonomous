@@ -68,6 +68,8 @@ def display():
         with AI_LOCK:
             print("\n=== Display Update ===")
             #TODO: ADD DISPLAY LOGIC HERE (e.g. update a web page, send to a dashboard, etc.)
+            
+            AI_CHANGED.clear()
 
 
 def _run_auto_thread():
