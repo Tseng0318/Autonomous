@@ -21,7 +21,7 @@ HARDWARE_AVAILABLE = True
 
 import serial
 
-from app.servo_final import set_angle, setup_servo, cleanup
+from app.servo_final import set_angle, setup_servo, cleanup, valve_toggle
 from base.new_main import main as auto
 
 
@@ -161,6 +161,7 @@ def valve_control(state:str):
     state = state.lower()
     if state not in ("on", "off"):
         raise ValueError("State must be 'on' or 'off'")
+    valve_toggle(state)
     #_arm_send_line(f"valve {state}")
 
 # Flask routes

@@ -9,7 +9,7 @@ from gpiozero import Device
 from gpiozero.pins.lgpio import LGPIOFactory
 
 Device.pin_factory = LGPIOFactory()
-from gpiozero import AngularServo
+from gpiozero import AngularServo, LED
 from time import sleep
 import time
 import math
@@ -18,8 +18,10 @@ from ikpy.chain import Chain
 from ikpy.link import OriginLink, URDFLink
 import numpy as np
 '''
-servo_pins = [12, 11, 13, 10]
+servo_pins = [26, 16, 13, 6]
+valve_pin = 3
 pwms = []
+
 '''
 L1, L2 = 5.0, 2.5  # lengths of arm segments
 arm_chain = Chain(name="3dof_arm", links=[
@@ -56,6 +58,8 @@ arm_chain = Chain(name="3dof_arm", links=[
 def setup_servo():
     for pin in servo_pins:
         pwms.append(AngularServo(pin, min_angle=0, max_angle=180, initial_angle=0))
+    
+    
     print("Servos initialized.")
 
 def set_angle(servo_num: int, angle: float):
@@ -68,10 +72,14 @@ def set_angle(servo_num: int, angle: float):
     if servo_num < 1 or servo_num > len(pwms):
         print("Invalid servo number")
         return 
+    global VALVE
+    VALVE = LED(9)
 
     servo = pwms[servo_num - 1]  # servo_num is 1-indexed
     servo.angle = angle
     sleep(1)
+
+
 
 def cleanup():
     for servo in pwms:
@@ -110,7 +118,7 @@ def move_arm(x:float, y:float, z:float):
 def generic_spray():
     set_angle(4,0)
     #TODO: Open valve function
-
+    valve_toggle('on')
     set_angle(4,45)
     sleep(2)
     set_angle(4,90)
@@ -121,11 +129,16 @@ def generic_spray():
     sleep(2)
     set_angle(4,45)
     sleep(2)
+    valve_toggle('off')
     
     #TODO: Close valve function
     set_angle(4,0)
 
-
+def valve_toggle(state):
+    if state.lower == 'on':
+        LED.on()
+    else:
+        LED.off()
 if __name__ == "__main__":
     try:
        while True:
