@@ -2,7 +2,7 @@
 """
 Unified robot controller for your setup:
 - /move  → proxies to the BASE (Wi-Fi API)
-- /servo → sends 'servoX angle' commands to the ARM (Arduino)
+- /servo → sends 'servoX angle' commands to the ARM 
 - /valve → sends 'valve on' or 'valve off' to the ARM
 """
 
@@ -291,7 +291,7 @@ def return_to_base():
 
 if __name__=="__main__":
     try:
-        #setup_servo()
+        setup_servo()
         AI_MODEL_THREAD = threading.Thread(target=display, daemon=True) # Thread to handle AI result display
         AI_MODEL_THREAD.start()
         app.run(host="0.0.0.0",port=5000, threaded=True, debug=False, use_reloader=False)
@@ -304,4 +304,4 @@ if __name__=="__main__":
         if AI_MODEL_THREAD is not None and AI_MODEL_THREAD.is_alive():
             AI_DISPLAY_STOP.set()  # Unblock display thread if waiting
             AI_MODEL_THREAD.join(timeout=1.0)
-        #cleanup()
+        cleanup()

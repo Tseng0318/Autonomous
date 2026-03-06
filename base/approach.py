@@ -52,6 +52,7 @@ def do_one_cycle(ser) -> None:
     )
     print(f"[CYCLE] Initial front distance = {d0} mm")
     
+    # For AI Display 
     with AI_LOCK:
         label, conf, probs = detect_rust()
         AI_CHANGED.set()  # Signal that AI results are updated

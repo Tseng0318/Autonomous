@@ -1,3 +1,8 @@
+'''
+Reference file for doing manual reverse kinematics
+Math might be wrong
+'''
+
 import math
 
 L1, L2 = 5, 2.5  # lengths of arm segments

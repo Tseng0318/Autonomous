@@ -1,6 +1,7 @@
 '''
     Servo control for arm.
-    Contains control and calculation functions.
+    Contains arm control and calculation functions.
+    reverse kinematic functions unfinished
 
 '''
 
@@ -17,7 +18,7 @@ from ikpy.chain import Chain
 from ikpy.link import OriginLink, URDFLink
 import numpy as np
 '''
-servo_pins = [12, 11, 13, 15]
+servo_pins = [12, 11, 13, 10]
 pwms = []
 '''
 L1, L2 = 5.0, 2.5  # lengths of arm segments
@@ -96,17 +97,15 @@ def servo_calculation(x:float, y:float, z:float):
     for ik in ik_solution:
         degrees.append(math.degrees(ik))
     return degrees  
-'''
 
 def move_arm(x:float, y:float, z:float):
-    '''
-    Move the robotic arm to the specified (x, y, z) coordinates.
-    '''
+    #Move the robotic arm to the specified (x, y, z) coordinates.
     angles = servo_calculation(x, y, z)
     for i in range(3):
         set_angle(i + 1, angles[i])
 
     return 1
+'''
 
 def generic_spray():
     set_angle(4,0)
