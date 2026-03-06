@@ -2,7 +2,7 @@
 """
 Unified robot controller for your setup:
 - /move  → proxies to the BASE (Wi-Fi API)
-- /servo → sends 'servoX angle' commands to the ARM (Arduino)
+- /servo → sends 'servoX angle' commands to the ARM 
 - /valve → sends 'valve on' or 'valve off' to the ARM
 """
 
@@ -21,7 +21,7 @@ HARDWARE_AVAILABLE = True
 
 import serial
 
-from app.servo_final import set_angle, setup_servo, cleanup
+from app.servo_final import set_angle, setup_servo, cleanup, valve_toggle
 from base.new_main import main as auto
 
 
@@ -179,6 +179,7 @@ def valve_control(state:str):
     state = state.lower()
     if state not in ("on", "off"):
         raise ValueError("State must be 'on' or 'off'")
+    valve_toggle(state)
     #_arm_send_line(f"valve {state}")
 
 # Flask routes
@@ -328,8 +329,13 @@ def return_to_base():
 
 if __name__=="__main__":
     try:
+<<<<<<< HEAD
         #setup_servo()
         AI_MODEL_THREAD = threading.Thread(target=_ai_display_worker, daemon=True) # Thread to handle AI result display
+=======
+        setup_servo()
+        AI_MODEL_THREAD = threading.Thread(target=display, daemon=True) # Thread to handle AI result display
+>>>>>>> 0142534c98f239fffde041e9ce1f052f373576fa
         AI_MODEL_THREAD.start()
         app.run(host="0.0.0.0",port=5000, threaded=True, debug=False, use_reloader=False)
     except KeyboardInterrupt:
@@ -341,4 +347,4 @@ if __name__=="__main__":
         if AI_MODEL_THREAD is not None and AI_MODEL_THREAD.is_alive():
             AI_DISPLAY_STOP.set()  # Unblock display thread if waiting
             AI_MODEL_THREAD.join(timeout=1.0)
-        #cleanup()
+        cleanup()

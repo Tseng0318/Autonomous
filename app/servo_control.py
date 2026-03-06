@@ -1,3 +1,9 @@
+'''
+Old servo control file
+Here for reference 
+Libraries outdated
+'''
+
 import RPi.GPIO as GPIO
 import time
 import math
