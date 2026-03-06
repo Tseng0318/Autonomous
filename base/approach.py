@@ -29,7 +29,7 @@ import threading
 
 
 from app.servo_final import generic_spray
-from app.app import AI_LOCK, label, conf, probs, AI_CHANGED
+# Note: app.app is imported inside do_one_cycle to avoid circular import at module load time
 
 #TODO: Import AI and servo functions
 
@@ -41,8 +41,9 @@ def do_one_cycle(ser) -> None:
     """
     Perform a single behaviour cycle using LiDAR + odometry.
     """
+    import app.app as _app  # deferred import — avoids circular import at module load time
+
     print("\n=== NEW CYCLE Start ===")
-    global label, conf, probs
 
     # 1) Measure front distance 
     d0 = get_front_distance_once(
@@ -51,10 +52,13 @@ def do_one_cycle(ser) -> None:
         max_range_mm=DETECTION_RANGE_MM,
     )
     print(f"[CYCLE] Initial front distance = {d0} mm")
-    
-    with AI_LOCK:
-        label, conf, probs = detect_rust()
-        AI_CHANGED.set()  # Signal that AI results are updated
+
+    _lbl, _conf, _probs = detect_rust()
+    with _app.AI_LOCK:
+        _app.label = _lbl
+        _app.conf  = _conf
+        _app.probs = _probs
+        _app.AI_CHANGED.set()  # Signal that AI results are updated
 
     # 2) Check if obsticle, initiate rotation logic
     approach_mm = max(0.0, float(d0))
@@ -70,8 +74,8 @@ def do_one_cycle(ser) -> None:
         # 5) Rotate same direction as first rotation
         rotate_same_90(ser, rot_dir)
 
-    # 6) Scan for rust
-    elif label == "CORROSION":  #TODO AI FUNCTION: Takes picture, looks for rust
+    # 6) Spray if rust detected
+    elif _lbl == "CORROSION":  #TODO AI FUNCTION: Takes picture, looks for rust
         # Spray and then move forward
         print("[Cycle] Rust Detected: Initiating servo movement")
         generic_spray()    #TODO SERVO FUNCTION: Moves servo, activates spray

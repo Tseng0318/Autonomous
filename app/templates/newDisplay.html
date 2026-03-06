@@ -1,0 +1,326 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>BAWA-786M UI</title>
+<link rel="stylesheet" href="../static/newDisplay.css">
+</head>
+<body>
+  <div class="screen">
+    <div class="header frame">
+      <div class="titlebar">
+        <div class="title-left">
+          <div class="title">BAWA-786M</div>
+          <div class="subtitle">Autonomous Corrosion Detection Platform</div>
+        </div>
+        <div class="brand">
+          <span class="big">ZeroG</span>
+          COATING SYSTEMS
+        </div>
+      </div>
+      <div class="mission">
+        MISSION: BAWA-786M TEST RUN &nbsp;|&nbsp;
+        DATE: <span id="missionDate">â€”â€”</span> &nbsp;|&nbsp;
+        TIME: <span id="missionTime">â€”â€”</span> &nbsp;|&nbsp;
+        SCAN: <span id="missionScanState">IDLE</span>
+      </div>
+    </div>
+
+    <div class="content">
+      <div class="leftcol">
+        <div class="panel frame">
+          <h3 class="panel-title">INSPECTION CAMERA</h3>
+          <div class="camera-box">
+            <!-- iPhone live stream via IP Camera Lite / similar MJPEG app -->
+            <img id="liveStream"
+                 src="http://192.168.1.100:8080/video"
+                 alt=""
+                 onload="document.getElementById('feedPlaceholder').style.display='none';
+                         document.getElementById('streamBadge').className='stream-badge live';
+                         document.getElementById('streamBadge').textContent='&#x25CF; LIVE';"
+                 onerror="this.style.display='none';
+                          document.getElementById('feedPlaceholder').style.display='flex';
+                          document.getElementById('streamBadge').className='stream-badge';
+                          document.getElementById('streamBadge').textContent='NO SIGNAL';">
+            <div id="feedPlaceholder" class="feed-placeholder">
+              <div class="feed-icon">&#128247;</div>
+              <div class="feed-label">AWAITING LIVE STREAM</div>
+              <div class="feed-hint">
+                Open <strong>IP Camera Lite</strong> on iPhone<br>
+                and connect to the same Wi-Fi network.
+              </div>
+            </div>
+            <div id="streamBadge" class="stream-badge">NO SIGNAL</div>
+          </div>
+        </div>
+
+        <div class="results frame">
+          <h3 class="panel-title">SCAN RESULTS</h3>
+          <table>
+            <thead>
+              <tr>
+                <th style="width:14%;">STATION</th>
+                <th style="width:20%;">AI SCORE</th>
+                <th style="width:24%;">DECISION</th>
+                <th style="width:20%;">ACTION</th>
+                <th style="width:12%;">TIME</th>
+              </tr>
+            </thead>
+            <tbody id="scanTableBody">
+              <tr id="row-A">
+                <td>A</td>
+                <td>
+                  <div style="display:flex;align-items:center;gap:14px;">
+                    <div class="scorebar"><span id="barA" style="width:0%;"></span></div>
+                    <strong id="scoreA">â€”</strong>
+                  </div>
+                </td>
+                <td id="decisionA"><span class="pending">Pending</span></td>
+                <td id="actionA"><span class="pending">â€”</span></td>
+                <td id="timeA"><span class="pending">â€”</span></td>
+              </tr>
+              <tr id="row-B">
+                <td>B</td>
+                <td>
+                  <div style="display:flex;align-items:center;gap:14px;">
+                    <div class="scorebar"><span id="barB" style="width:0%;"></span></div>
+                    <strong id="scoreB">â€”</strong>
+                  </div>
+                </td>
+                <td id="decisionB"><span class="pending">Pending</span></td>
+                <td id="actionB"><span class="pending">â€”</span></td>
+                <td id="timeB"><span class="pending">â€”</span></td>
+              </tr>
+              <tr id="row-C">
+                <td>C</td>
+                <td>
+                  <div style="display:flex;align-items:center;gap:14px;">
+                    <div class="scorebar"><span id="barC" style="width:0%;"></span></div>
+                    <strong id="scoreC">â€”</strong>
+                  </div>
+                </td>
+                <td id="decisionC"><span class="pending">Pending</span></td>
+                <td id="actionC"><span class="pending">â€”</span></td>
+                <td id="timeC"><span class="pending">â€”</span></td>
+              </tr>
+            </tbody>
+          </table>
+          <div class="footerline">
+            <div class="left">
+              <span><span class="legend-dot d-cyan"></span>144,240 Annotated Images</span>
+            </div>
+            <div class="right">
+              <span><span class="legend-dot d-green"></span>Dataset Ready</span>
+              <span><span class="legend-dot d-green"></span>Armed</span>
+              <span><span class="legend-dot d-red" id="legendState"></span><span id="legendStateText">Idle</span></span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="side">
+        <div class="section frame">
+          <h3 class="panel-title">AI DETECTION STATUS</h3>
+          <div class="stat"><span>Current Station:</span><strong id="statStation">â€”</strong></div>
+          <div class="stat"><span>Rust Probability</span><strong id="statProb">â€”</strong></div>
+          <div class="gauge-wrap">
+            <div class="gauge" id="gaugeEl">
+              <div class="gauge-inner">
+                <div class="small" id="gaugeLabel">NO DATA</div>
+                <div class="big" id="gaugePercent">â€”</div>
+              </div>
+            </div>
+          </div>
+          <div class="stat"><span>Confidence Level:</span><strong id="statConfLevel">â€”</strong></div>
+          <div class="stat"><span>Inference Time:</span><strong id="statInference">â€”</strong></div>
+          <div class="stat"><span>AI Model:</span><strong>ResNet-18</strong></div>
+          <div class="stat"><span>Threshold:</span><strong>0.65</strong></div>
+        </div>
+
+        <div class="section frame">
+          <h3 class="panel-title">SYSTEM STATUS</h3>
+          <div class="status-list">
+            <div class="item"><span class="dot yellow" id="dotCamera"></span><span id="lblCamera">Camera: Connectingâ€¦</span></div>
+            <div class="item"><span class="dot" id="dotAI"></span><span id="lblAI">AI Model: Loaded</span></div>
+            <div class="item"><span class="dot yellow" id="dotRobot"></span><span id="lblRobot">Robot: Checkingâ€¦</span></div>
+            <div class="item"><span class="dot" id="dotSpray"></span><span id="lblSpray">Spray System: Armed</span></div>
+          </div>
+        </div>
+
+        <div class="spray-box frame">
+          <h3 class="panel-title">SPRAY STATUS</h3>
+          <div class="spray-state">
+            <div class="pill" id="pillArmed">ARMED</div>
+            <div class="pill red dimmed" id="pillActivated">ACTIVATED</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+<script>
+// â”€â”€ Constants â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+const POLL_AI_MS      = 2000;
+const POLL_RESULTS_MS = 3000;
+const STATIONS        = ["A", "B", "C"];
+
+// â”€â”€ Live clock (mission bar) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+function updateClock() {
+  const now  = new Date();
+  const date = now.toISOString().slice(0, 10);
+  const time = now.toTimeString().slice(0, 8);
+  document.getElementById("missionDate").textContent = date;
+  document.getElementById("missionTime").textContent = time;
+}
+updateClock();
+setInterval(updateClock, 1000);
+
+// â”€â”€ Gauge (conic-gradient updated via inline style) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+function setGauge(pct, isRust) {
+  const gaugeEl    = document.getElementById("gaugeEl");
+  const stop       = Math.max(0, Math.min(100, Math.round(pct * 100)));
+  const fillColor  = isRust ? "var(--red)"    : "var(--green)";
+  const accentColor = isRust ? "var(--yellow)" : "var(--cyan)";
+  const accentEnd  = Math.min(100, stop + 6);
+  gaugeEl.style.background = [
+    "radial-gradient(circle at center, #0a1017 53%, transparent 54%)",
+    `conic-gradient(${fillColor} 0 ${stop}%, ${accentColor} ${stop}% ${accentEnd}%, rgba(255,255,255,.10) ${accentEnd}% 100%)`
+  ].join(", ");
+}
+
+// â”€â”€ System status dot helper â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+function setDot(dotId, lblId, state, text) {
+  const dot = document.getElementById(dotId);
+  const lbl = document.getElementById(lblId);
+  dot.className = "dot" + (state === "ok" ? "" : state === "warn" ? " yellow" : " red");
+  lbl.textContent = text;
+}
+
+// â”€â”€ Poll /ai_status â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+function pollAiStatus() {
+  fetch("/ai_status")
+    .then(r => r.json())
+    .then(data => {
+      const pct     = data.conf;                      // 0.0 â€“ 1.0
+      const isRust  = data.label === "CORROSION";
+      const hasData = data.label !== "";
+      const running = data.running;
+      const robot   = data.robot_connected;
+
+      // Mission bar
+      document.getElementById("missionScanState").textContent =
+        running ? "RUNNING" : "IDLE";
+
+      // Gauge
+      if (hasData) {
+        setGauge(pct, isRust);
+        document.getElementById("gaugeLabel").textContent   = isRust ? "RUST DETECTED" : "NO CORROSION";
+        document.getElementById("gaugePercent").textContent = Math.round(pct * 100) + "%";
+      } else {
+        setGauge(0, false);
+        document.getElementById("gaugeLabel").textContent   = "NO DATA";
+        document.getElementById("gaugePercent").textContent = "â€”";
+      }
+
+      // Stats panel
+      document.getElementById("statProb").textContent =
+        hasData ? Math.round(pct * 100) + "%" : "â€”";
+      const confLevel = pct >= 0.75 ? "HIGH" : pct >= 0.5 ? "MEDIUM" : (hasData ? "LOW" : "â€”");
+      document.getElementById("statConfLevel").textContent = confLevel;
+
+      // System status dots
+      setDot("dotRobot", "lblRobot",
+        robot   ? "ok"   : "red",
+        robot   ? "Robot: Connected" : "Robot: Disconnected");
+      setDot("dotAI", "lblAI",
+        running ? "ok"   : "warn",
+        running ? "AI Model: Running" : "AI Model: Idle");
+      setDot("dotSpray", "lblSpray", "ok", "Spray System: Armed");
+
+      // Spray status pills
+      const activated = isRust && running;
+      document.getElementById("pillActivated").classList.toggle("dimmed", !activated);
+      document.getElementById("pillArmed").classList.toggle("dimmed",  activated);
+
+      // Footer legend
+      document.getElementById("legendStateText").textContent =
+        running ? "Live Scan" : "Idle";
+      document.getElementById("legendState").style.background =
+        running ? "var(--green)" : "var(--red)";
+    })
+    .catch(() => {
+      // Server unreachable
+      setDot("dotRobot", "lblRobot", "red", "Robot: Offline");
+      setDot("dotAI",    "lblAI",    "red", "AI Model: Offline");
+      document.getElementById("missionScanState").textContent = "OFFLINE";
+    });
+}
+
+// â”€â”€ Poll /scan_results â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+let _prevResultCount = 0;
+
+function pollScanResults() {
+  fetch("/scan_results")
+    .then(r => r.json())
+    .then(data => {
+      const results = data.results;
+      if (results.length === _prevResultCount) return; // nothing new
+      _prevResultCount = results.length;
+
+      // Build map: station -> most recent result
+      const latest = {};
+      results.forEach(r => { latest[r.station] = r; });
+
+      STATIONS.forEach(s => {
+        const r = latest[s];
+        if (!r) return;
+
+        const pctStr = Math.round(r.score * 100) + "%";
+        document.getElementById("bar" + s).style.width   = pctStr;
+        document.getElementById("score" + s).textContent  = r.score.toFixed(2);
+
+        const decClass = r.decision === "Rust" ? "rust"
+                       : r.decision === "Clean" ? "clean" : "uncertain";
+        document.getElementById("decision" + s).innerHTML =
+          `<span class="decision ${decClass}">${r.decision}</span>`;
+        document.getElementById("action" + s).textContent = r.action;
+        document.getElementById("time"   + s).textContent = r.time;
+
+        // Keep statStation showing the last station scanned
+        document.getElementById("statStation").textContent  = s;
+        document.getElementById("statInference").textContent = "â€”";
+      });
+    })
+    .catch(() => { /* silently skip */ });
+}
+
+// â”€â”€ Camera stream badge â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// Reconnect probe: clears and restores src so onload/onerror fire again.
+function probeStream() {
+  const img = document.getElementById("liveStream");
+  const src = img.src;
+  img.style.display = "block";
+  img.src = "";
+  img.src = src;
+}
+
+function syncCameraStatus() {
+  const isLive = document.getElementById("streamBadge").classList.contains("live");
+  setDot("dotCamera", "lblCamera",
+    isLive ? "ok" : "warn",
+    isLive ? "Camera: OK" : "Camera: No Signal");
+}
+
+// â”€â”€ Boot â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+pollAiStatus();
+pollScanResults();
+syncCameraStatus();
+
+setInterval(pollAiStatus,    POLL_AI_MS);
+setInterval(pollScanResults, POLL_RESULTS_MS);
+setInterval(probeStream,     6000);
+setInterval(syncCameraStatus, 2500);
+</script>
+</body>
+</html>

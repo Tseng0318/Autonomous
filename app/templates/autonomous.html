@@ -48,7 +48,7 @@
         document.getElementById('testBtn').addEventListener('click', () => {
             const path = window.location.pathname.toLowerCase();
             const isTemplatePreview = path.includes('/templates/') || path.endsWith('.html');
-            window.open(isTemplatePreview ? './display.html' : '/display', '_blank');
+            window.open(isTemplatePreview ? './newDisplay.html' : '/display', '_blank');
         });
 
         document.getElementById('emergencyBtn').addEventListener('click', () => {

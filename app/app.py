@@ -61,14 +61,32 @@ AI_MODEL_THREAD = None
 AI_CHANGED = threading.Event()
 AI_DISPLAY_STOP = threading.Event()
 
-def display():
-    global label, conf, probs
+# --- Scan result tracking ---
+scan_results = []                        # accumulated per-cycle AI results
+_scan_result_lock = threading.Lock()
+_STATION_NAMES = ["A", "B", "C"]
+_current_station_idx = 0
+
+def _ai_display_worker():
+    """Background thread: fires every time detect_rust() produces a new result."""
+    global label, conf, probs, _current_station_idx
     while not AI_DISPLAY_STOP.is_set():
-        AI_CHANGED.wait()  # Wait until AI has new results
+        AI_CHANGED.wait()  # Block until approach.py sets the event
         with AI_LOCK:
-            print("\n=== Display Update ===")
-            #TODO: ADD DISPLAY LOGIC HERE (e.g. update a web page, send to a dashboard, etc.)
-            
+            station = _STATION_NAMES[_current_station_idx % len(_STATION_NAMES)]
+            decision = "Rust" if label == "CORROSION" else ("Clean" if conf >= 0.65 else "Uncertain")
+            action   = "Spray" if label == "CORROSION" else ("None" if decision == "Clean" else "Review")
+            entry = {
+                "station":  station,
+                "score":    round(float(conf), 4),
+                "decision": decision,
+                "action":   action,
+                "time":     time.strftime("%H:%M:%S"),
+            }
+            with _scan_result_lock:
+                scan_results.append(entry)
+            _current_station_idx += 1
+            app.logger.info(f"[DISPLAY] Station {station}: {decision} ({conf:.2%})")
             AI_CHANGED.clear()
 
 
@@ -181,7 +199,7 @@ def autonomous():
 @app.route("/display")
 def display():
     try:
-        return render_template("display.html")
+        return render_template("newDisplay.html")
     except Exception as e:
         app.logger.exception("Display page error")
         return jsonify(ok=False, error=str(e)), 500
@@ -274,6 +292,25 @@ def stop_scan():
         app.logger.exception("Stop scan error")
         return jsonify(ok=False, error=str(e)), 500
 
+@app.route("/ai_status")
+def ai_status_endpoint():
+    """Return the latest AI inference result and system connectivity."""
+    with AI_LOCK:
+        running = AUTO_MOVE is not None and AUTO_MOVE.is_alive()
+        serial_ok = ser is not None and ser.is_open
+        return jsonify(
+            label=label,
+            conf=round(float(conf), 4),
+            running=running,
+            robot_connected=serial_ok,
+        )
+
+@app.route("/scan_results")
+def get_scan_results():
+    """Return all accumulated per-cycle scan results."""
+    with _scan_result_lock:
+        return jsonify(results=list(scan_results))
+
 @app.route("/return_to_base")
 def return_to_base():
     """
@@ -292,7 +329,7 @@ def return_to_base():
 if __name__=="__main__":
     try:
         #setup_servo()
-        AI_MODEL_THREAD = threading.Thread(target=display, daemon=True) # Thread to handle AI result display
+        AI_MODEL_THREAD = threading.Thread(target=_ai_display_worker, daemon=True) # Thread to handle AI result display
         AI_MODEL_THREAD.start()
         app.run(host="0.0.0.0",port=5000, threaded=True, debug=False, use_reloader=False)
     except KeyboardInterrupt:
