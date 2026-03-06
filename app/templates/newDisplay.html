@@ -15,15 +15,17 @@
           <div class="subtitle">Autonomous Corrosion Detection Platform</div>
         </div>
         <div class="brand">
-          <span class="big">ZeroG</span>
-          COATING SYSTEMS
+          <img src="../static/zerog_logo.png" alt="ZeroG Coating Systems" class="brand-logo">
         </div>
       </div>
       <div class="mission">
-        MISSION: BAWA-786M TEST RUN &nbsp;|&nbsp;
-        DATE: <span id="missionDate">â€”â€”</span> &nbsp;|&nbsp;
-        TIME: <span id="missionTime">â€”â€”</span> &nbsp;|&nbsp;
-        SCAN: <span id="missionScanState">IDLE</span>
+        <div class="mission-text">
+          MISSION: BAWA-786M TEST RUN &nbsp;|&nbsp;
+          DATE: <span id="missionDate">--</span> &nbsp;|&nbsp;
+          TIME: <span id="missionTime">--</span> &nbsp;|&nbsp;
+          SCAN: <span id="missionScanState">IDLE</span>
+        </div>
+        <button class="fs-btn" id="btnFullscreen" onclick="toggleFullscreen()">&#x26F6; FULLSCREEN</button>
       </div>
     </div>
 
@@ -52,6 +54,11 @@
               </div>
             </div>
             <div id="streamBadge" class="stream-badge">NO SIGNAL</div>
+            <div class="cam-info">
+              <span>INSPECTION CAMERA</span>
+              <span>RES&thinsp;1280&times;720</span>
+              <span>FPS&thinsp;30</span>
+            </div>
           </div>
         </div>
 
@@ -73,42 +80,42 @@
                 <td>
                   <div style="display:flex;align-items:center;gap:14px;">
                     <div class="scorebar"><span id="barA" style="width:0%;"></span></div>
-                    <strong id="scoreA">â€”</strong>
+                    <strong id="scoreA">--</strong>
                   </div>
                 </td>
                 <td id="decisionA"><span class="pending">Pending</span></td>
-                <td id="actionA"><span class="pending">â€”</span></td>
-                <td id="timeA"><span class="pending">â€”</span></td>
+                <td id="actionA"><span class="pending">--</span></td>
+                <td id="timeA"><span class="pending">--</span></td>
               </tr>
               <tr id="row-B">
                 <td>B</td>
                 <td>
                   <div style="display:flex;align-items:center;gap:14px;">
                     <div class="scorebar"><span id="barB" style="width:0%;"></span></div>
-                    <strong id="scoreB">â€”</strong>
+                    <strong id="scoreB">--</strong>
                   </div>
                 </td>
                 <td id="decisionB"><span class="pending">Pending</span></td>
-                <td id="actionB"><span class="pending">â€”</span></td>
-                <td id="timeB"><span class="pending">â€”</span></td>
+                <td id="actionB"><span class="pending">--</span></td>
+                <td id="timeB"><span class="pending">--</span></td>
               </tr>
               <tr id="row-C">
                 <td>C</td>
                 <td>
                   <div style="display:flex;align-items:center;gap:14px;">
                     <div class="scorebar"><span id="barC" style="width:0%;"></span></div>
-                    <strong id="scoreC">â€”</strong>
+                    <strong id="scoreC">--</strong>
                   </div>
                 </td>
                 <td id="decisionC"><span class="pending">Pending</span></td>
-                <td id="actionC"><span class="pending">â€”</span></td>
-                <td id="timeC"><span class="pending">â€”</span></td>
+                <td id="actionC"><span class="pending">--</span></td>
+                <td id="timeC"><span class="pending">--</span></td>
               </tr>
             </tbody>
           </table>
           <div class="footerline">
             <div class="left">
-              <span><span class="legend-dot d-cyan"></span>144,240 Annotated Images</span>
+              <span><span class="legend-dot d-cyan"></span>TRAINING DATASET &mdash; 144,240 Annotated Images</span>
             </div>
             <div class="right">
               <span><span class="legend-dot d-green"></span>Dataset Ready</span>
@@ -122,18 +129,18 @@
       <div class="side">
         <div class="section frame">
           <h3 class="panel-title">AI DETECTION STATUS</h3>
-          <div class="stat"><span>Current Station:</span><strong id="statStation">â€”</strong></div>
-          <div class="stat"><span>Rust Probability</span><strong id="statProb">â€”</strong></div>
+          <div class="stat"><span>Current Station:</span><strong id="statStation">--</strong></div>
+          <div class="stat"><span>Rust Probability</span><strong id="statProb">--</strong></div>
           <div class="gauge-wrap">
             <div class="gauge" id="gaugeEl">
               <div class="gauge-inner">
                 <div class="small" id="gaugeLabel">NO DATA</div>
-                <div class="big" id="gaugePercent">â€”</div>
+                <div class="big" id="gaugePercent">--</div>
               </div>
             </div>
           </div>
-          <div class="stat"><span>Confidence Level:</span><strong id="statConfLevel">â€”</strong></div>
-          <div class="stat"><span>Inference Time:</span><strong id="statInference">â€”</strong></div>
+          <div class="stat"><span>Confidence Level:</span><strong id="statConfLevel">--</strong></div>
+          <div class="stat"><span>Inference Time:</span><strong id="statInference">--</strong></div>
           <div class="stat"><span>AI Model:</span><strong>ResNet-18</strong></div>
           <div class="stat"><span>Threshold:</span><strong>0.65</strong></div>
         </div>
@@ -141,9 +148,9 @@
         <div class="section frame">
           <h3 class="panel-title">SYSTEM STATUS</h3>
           <div class="status-list">
-            <div class="item"><span class="dot yellow" id="dotCamera"></span><span id="lblCamera">Camera: Connectingâ€¦</span></div>
+            <div class="item"><span class="dot yellow" id="dotCamera"></span><span id="lblCamera">Camera: Connecting...</span></div>
             <div class="item"><span class="dot" id="dotAI"></span><span id="lblAI">AI Model: Loaded</span></div>
-            <div class="item"><span class="dot yellow" id="dotRobot"></span><span id="lblRobot">Robot: Checkingâ€¦</span></div>
+            <div class="item"><span class="dot yellow" id="dotRobot"></span><span id="lblRobot">Robot: Checking...</span></div>
             <div class="item"><span class="dot" id="dotSpray"></span><span id="lblSpray">Spray System: Armed</span></div>
           </div>
         </div>
@@ -220,13 +227,13 @@ function pollAiStatus() {
       } else {
         setGauge(0, false);
         document.getElementById("gaugeLabel").textContent   = "NO DATA";
-        document.getElementById("gaugePercent").textContent = "â€”";
+        document.getElementById("gaugePercent").textContent = "--";
       }
 
       // Stats panel
       document.getElementById("statProb").textContent =
-        hasData ? Math.round(pct * 100) + "%" : "â€”";
-      const confLevel = pct >= 0.75 ? "HIGH" : pct >= 0.5 ? "MEDIUM" : (hasData ? "LOW" : "â€”");
+        hasData ? Math.round(pct * 100) + "%" : "--";
+      const confLevel = pct >= 0.75 ? "HIGH" : pct >= 0.5 ? "MEDIUM" : (hasData ? "LOW" : "--");
       document.getElementById("statConfLevel").textContent = confLevel;
 
       // System status dots
@@ -289,7 +296,7 @@ function pollScanResults() {
 
         // Keep statStation showing the last station scanned
         document.getElementById("statStation").textContent  = s;
-        document.getElementById("statInference").textContent = "â€”";
+        document.getElementById("statInference").textContent = "--";
       });
     })
     .catch(() => { /* silently skip */ });
@@ -317,10 +324,36 @@ pollAiStatus();
 pollScanResults();
 syncCameraStatus();
 
+// -- Auto fullscreen on load ------------------------------------------
+(function () {
+  function enterFS() {
+    if (!document.fullscreenElement) {
+      document.documentElement.requestFullscreen().catch(() => {});
+    }
+  }
+  // Try immediately; if browser blocks it, enter on first click instead
+  document.documentElement.requestFullscreen().catch(() => {
+    document.addEventListener('click', enterFS, { once: true });
+  });
+})();
+
 setInterval(pollAiStatus,    POLL_AI_MS);
 setInterval(pollScanResults, POLL_RESULTS_MS);
 setInterval(probeStream,     6000);
 setInterval(syncCameraStatus, 2500);
+
+// ── Fullscreen ────────────────────────────────────────────────────────────────
+function toggleFullscreen() {
+  if (!document.fullscreenElement) {
+    document.documentElement.requestFullscreen().catch(() => {});
+  } else {
+    document.exitFullscreen();
+  }
+}
+document.addEventListener("fullscreenchange", () => {
+  const btn = document.getElementById("btnFullscreen");
+  if (btn) btn.textContent = document.fullscreenElement ? "\u26F6 EXIT" : "\u26F6 FULLSCREEN";
+});
 </script>
 </body>
 </html>
