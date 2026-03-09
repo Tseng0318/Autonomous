@@ -15,7 +15,7 @@ from model import detect_rust
 PORT_UGV = "/dev/ttyACM0"
 BAUD_UGV = 115200
 
-STEP_MM = 600.0        # 50 cm
+STEP_MM = 4572.0        # 50 cm
 N_REPS = 20            # number of repetitions; set to None for infinite loop
 PAUSE_S = 0.05         # small pause between actions
 
@@ -36,7 +36,7 @@ def run_pattern(ser, step_mm: float = STEP_MM, reps: int | None = N_REPS) -> Non
         time.sleep(PAUSE_S)
         detect_rust()
         print("[PATTERN] Rotate RIGHT (~90 using your current rotation tuning)")
-        rotate_90(ser, direction=-1)  # RIGHT
+        rotate_90(ser, direction=1)  # RIGHT
         time.sleep(PAUSE_S)
 
         if reps is not None and i >= reps:
