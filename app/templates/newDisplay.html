@@ -34,26 +34,14 @@
         <div class="panel frame">
           <h3 class="panel-title">INSPECTION CAMERA</h3>
           <div class="camera-box">
-            <!-- iPhone live stream via IP Camera Lite / similar MJPEG app -->
-            <img id="liveStream"
-                 src="http://192.168.1.100:8080/video"
-                 alt=""
-                 onload="document.getElementById('feedPlaceholder').style.display='none';
-                         document.getElementById('streamBadge').className='stream-badge live';
-                         document.getElementById('streamBadge').textContent='&#x25CF; LIVE';"
-                 onerror="this.style.display='none';
-                          document.getElementById('feedPlaceholder').style.display='flex';
-                          document.getElementById('streamBadge').className='stream-badge';
-                          document.getElementById('streamBadge').textContent='NO SIGNAL';">
-            <div id="feedPlaceholder" class="feed-placeholder">
-              <div class="feed-icon">&#128247;</div>
-              <div class="feed-label">AWAITING LIVE STREAM</div>
-              <div class="feed-hint">
-                Open <strong>IP Camera Lite</strong> on iPhone<br>
-                and connect to the same Wi-Fi network.
-              </div>
-            </div>
-            <div id="streamBadge" class="stream-badge">NO SIGNAL</div>
+            <!-- VDO.ninja live stream — push ID: robotcam2026 -->
+            <iframe
+                id="liveStream"
+                src="https://vdo.ninja/?view=robotcam2026&cleanoutput&transparent&autoplay&muted"
+                allow="autoplay; camera; microphone; fullscreen"
+                style="width:100%; height:100%; border:none;">
+            </iframe>
+            <div id="streamBadge" class="stream-badge live">&#x25CF; LIVE</div>
             <div class="cam-info">
               <span>INSPECTION CAMERA</span>
               <span>RES&thinsp;1280&times;720</span>
@@ -302,15 +290,29 @@ function pollScanResults() {
     .catch(() => { /* silently skip */ });
 }
 
-// â”€â”€ Camera stream badge â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-// Reconnect probe: clears and restores src so onload/onerror fire again.
-function probeStream() {
-  const img = document.getElementById("liveStream");
-  const src = img.src;
-  img.style.display = "block";
-  img.src = "";
-  img.src = src;
+// ── Camera stream badge (driven by VDO.ninja postMessage events) ──────────────
+function setStreamLive(isLive) {
+  const badge = document.getElementById("streamBadge");
+  if (isLive) {
+    badge.className   = "stream-badge live";
+    badge.textContent = "\u25CF LIVE";
+  } else {
+    badge.className   = "stream-badge";
+    badge.textContent = "NO SIGNAL";
+  }
 }
+
+// VDO.ninja fires postMessage to the parent when stream starts/stops
+window.addEventListener("message", function (e) {
+  if (!e.data) return;
+  var data = e.data;
+  if (typeof data === "string") { try { data = JSON.parse(data); } catch(x) { return; } }
+  var action = data.action || data.type || data.event || "";
+  var connected = ["playVideo","loadeddata","streamConnected","joined","connected"];
+  var dropped   = ["stopVideo","disconnected","streamDisconnected","left"];
+  if (connected.indexOf(action) !== -1) setStreamLive(true);
+  if (dropped.indexOf(action)   !== -1) setStreamLive(false);
+});
 
 function syncCameraStatus() {
   const isLive = document.getElementById("streamBadge").classList.contains("live");
@@ -339,7 +341,6 @@ syncCameraStatus();
 
 setInterval(pollAiStatus,    POLL_AI_MS);
 setInterval(pollScanResults, POLL_RESULTS_MS);
-setInterval(probeStream,     6000);
 setInterval(syncCameraStatus, 2500);
 
 // ── Fullscreen ────────────────────────────────────────────────────────────────

@@ -1,0 +1,11 @@
+=======================================================
+  LIVE STREAM — iPhone Push Link
+=======================================================
+
+  Open this link in Safari on the iPhone to start
+  broadcasting. The stream will automatically appear
+  on the display page.
+
+  https://vdo.ninja/?push=robotcam2026&webcam
+
+=======================================================

@@ -132,7 +132,17 @@ body {
   justify-content: center;
 }
 
-.camera-box img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.camera-box img    { width: 100%; height: 100%; object-fit: cover; display: block; }
+.camera-box iframe {
+  position: absolute;
+  inset: 0;
+  width: 100%; height: 100%;
+  border: none;
+  z-index: 1;
+}
+.feed-placeholder  { z-index: 2; }
+.stream-badge      { z-index: 3; }
+.cam-info          { z-index: 3; }
 
 .feed-placeholder {
   position: absolute; inset: 0;
