@@ -16,13 +16,23 @@ import os, time, glob, logging, requests, json
 import threading
 import numpy as np
 
-# --- Hardware availability flag (False on Windows / non-Pi environments) ---
+# --- Hardware imports (Pi-only; stubbed on Windows/dev) ---
 HARDWARE_AVAILABLE = True
 
-import serial
-
-from app.servo_final import set_angle, setup_servo, cleanup, valve_toggle
-from base.new_main import main as auto
+try:
+    import serial
+    from app.servo_final import set_angle, setup_servo, cleanup, valve_toggle
+    from base.new_main import main as auto
+except Exception as _hw_err:
+    import warnings
+    warnings.warn(f"[HW] Pi hardware unavailable: {_hw_err}. Running in display-only mode.")
+    HARDWARE_AVAILABLE = False
+    serial = None
+    def set_angle(*a, **kw): pass
+    def setup_servo(): pass
+    def cleanup(): pass
+    def valve_toggle(*a, **kw): pass
+    def auto(*a, **kw): pass
 
 
 
@@ -47,7 +57,10 @@ REQUIRE_INDEX    = True
 PORT_UGV = "/dev/ttyACM0" # connected port, do not change here
 BAUD_UGV = 115200 # connected port, do not change here
 
-ser = serial.Serial(PORT_UGV, BAUD_UGV, timeout=0.02) # connect to ports
+try:
+    ser = serial.Serial(PORT_UGV, BAUD_UGV, timeout=0.02) if serial else None  # connect to ports
+except Exception:
+    ser = None
 
 
 stop_event = threading.Event()
