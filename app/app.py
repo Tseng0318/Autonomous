@@ -23,6 +23,7 @@ try:
     import serial
     from app.servo_final import set_angle, setup_servo, cleanup, valve_toggle
     from base.new_main import main as auto
+    from base.station import main as station
 except Exception as _hw_err:
     import warnings
     warnings.warn(f"[HW] Pi hardware unavailable: {_hw_err}. Running in display-only mode.")
@@ -67,6 +68,10 @@ stop_event = threading.Event()
 AUTO_MOVE = None
 SCAN_THREAD_LOCK = threading.Lock()
 
+STATION_STOP_EVENT = threading.Event()
+STATIONS_MOVE = None
+STATIONS_THREAD_LOCK = threading.Lock()
+
 label, conf, probs = "", 0.0, np.array([])  #For AI Model results
 AI_LOCK = threading.Lock()
 
@@ -109,6 +114,11 @@ def _run_auto_thread():
     except Exception as e:
         app.logger.exception(f"[AUTO] Autonomous thread crashed: {e}")
 
+def _run_stations_thread():
+    try:
+        station(STATION_STOP_EVENT, ser)
+    except Exception as e:
+        app.logger.exception(f"[AUTO] Autonomous thread crashed: {e}")
 
 def _auto_serial(pattern, baud):
     '''
@@ -328,16 +338,26 @@ def get_scan_results():
 @app.route("/return_to_base")
 def return_to_base():
     """
-    Placeholder for return to base functionality.
-    TODO: Implement navigation logic to return to starting position
+    Placeholder for autonomous scanning functionality.
+    TODO: Implement actual scan logic here
     """
+    global STATIONS_MOVE
     try:
-        app.logger.info("[NAV] Returning to base...")
-        move_base(0, 0)  # Stop the robot for now
-        # TODO: Add return-to-base navigation logic
-        return jsonify(ok=True, status="returning_to_base")
+        with STATIONS_THREAD_LOCK:
+            app.logger.info("[SCAN] Starting autonomous scan...")
+            if ser is None or not ser.is_open:
+                return jsonify(ok=False, error="UGV serial is not connected"), 500
+            if STATIONS_MOVE is None or not STATIONS_MOVE.is_alive():
+                stop_event.clear()
+                STATIONS_MOVE = threading.Thread(target=_run_stations_thread, daemon=True) # Thread to run the autonomous movement logic
+                STATIONS_MOVE.start()
+                app.logger.info("[SCAN] Autonomous thread started")
+            else:
+                app.logger.info("[SCAN] Autonomous thread already running")
+        # TODO: Add scan initialization logic
+        return jsonify(ok=True, status="scan_started")
     except Exception as e:
-        app.logger.exception("Return to base error")
+        app.logger.exception("Start scan error")
         return jsonify(ok=False, error=str(e)), 500
 
 if __name__=="__main__":

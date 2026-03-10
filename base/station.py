@@ -7,6 +7,7 @@
 import json
 import time
 import serial
+import threading
 
 from motion import drive_forward_mm, stop
 from new_rotation import rotate_90  # uses your existing function: direction=-1 means RIGHT
@@ -26,9 +27,9 @@ def request_fast_telemetry(ser) -> None:
     ser.write((json.dumps({"T": 142, "cmd": 50}) + "\n").encode("utf-8"))
 
 
-def run_pattern(ser, step_mm: float = STEP_MM, reps: int | None = N_REPS) -> None:
+def run_pattern(ser,stop_event, step_mm: float = STEP_MM, reps: int | None = N_REPS) -> None:
     i = 0
-    while True:
+    while not stop_event.is_set():
         i += 1
         print(f"\n=== PATTERN REP {i} ===")
 
@@ -54,38 +55,34 @@ def run_pattern(ser, step_mm: float = STEP_MM, reps: int | None = N_REPS) -> Non
             break
 
 
-def main():
-    ser = None
+def main(stop_event, ser):
+    request_fast_telemetry(ser)
     try:
-        ser = serial.Serial(PORT_UGV, BAUD_UGV, timeout=0.02)
-        time.sleep(0.03)
+        ser.reset_input_buffer()
+    except Exception:
+        pass
 
-        request_fast_telemetry(ser)
-        try:
-            ser.reset_input_buffer()
-        except Exception:
-            pass
+    print(f"[MAIN] Connected to UGV on {PORT_UGV} @ {BAUD_UGV}")
+    print("Press Ctrl+C to stop.\n")
 
-        print(f"[MAIN] Connected to UGV on {PORT_UGV} @ {BAUD_UGV}")
-        print("Press Ctrl+C to stop.\n")
-
-        run_pattern(ser)
-
+    
+    try:
+        run_pattern(ser,stop_event) # perform the preset path logic
+        time.sleep(1.0)  # small pause between cycles
 
     except KeyboardInterrupt:
         print("\n[MAIN] Ctrl+C received, stopping.")
+
     finally:
-        if ser is not None:
-            try:
-                stop(ser)
-            except Exception:
-                pass
-            try:
-                ser.close()
-            except Exception:
-                pass
+        try:
+            stop(ser)
+        except Exception:
+            pass
+        stop_event.clear()
         print("[MAIN] Serial closed, exiting.")
 
-
 if __name__ == "__main__":
-    main()
+    ser = serial.Serial(PORT_UGV, BAUD_UGV, timeout=0.02) # connect to ports
+    stop_event = threading.Event()
+    stop_event.clear() # set the event to indicate running
+    main(stop_event, ser)
