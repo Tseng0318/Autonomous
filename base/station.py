@@ -27,7 +27,7 @@ def request_fast_telemetry(ser) -> None:
     ser.write((json.dumps({"T": 142, "cmd": 50}) + "\n").encode("utf-8"))
 
 
-def run_pattern(ser,stop_event, step_mm: float = STEP_MM, reps: int | None = N_REPS) -> None:
+def run_pattern(ser, stop_event, STEP_MM_long: float = STEP_MM_long, STEP_MM_width: float = STEP_MM_width, reps: int | None = N_REPS) -> None:
     i = 0
     while not stop_event.is_set():
         i += 1
