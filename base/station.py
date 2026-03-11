@@ -28,24 +28,47 @@ def request_fast_telemetry(ser) -> None:
 
 
 def run_pattern(ser, stop_event, STEP_MM_long: float = STEP_MM_long, STEP_MM_width: float = STEP_MM_width, reps: int | None = N_REPS) -> None:
+    devided=STEP_MM_width/3
     i = 0
     while not stop_event.is_set():
         i += 1
         print(f"\n=== PATTERN REP {i} ===")
-
+        
         print(f"[PATTERN] Forward {STEP_MM_long:.0f} mm")
-        drive_forward_mm(ser, STEP_MM_long, label=f"fwd_{i}") # long side 
+        drive_forward_mm(ser, STEP_MM_long, label=f"fwd_{i}") # long side
         time.sleep(PAUSE_S)
+
+        print("[PATTERN] Rotate Left (~90 using your current rotation tuning)")
+        rotate_90(ser, direction=1)  # Left
+
+        print(f"[PATTERN] Forward {devided:.0f} mm")
+        drive_forward_mm(ser, devided, label=f"fwd_{i}") # width for stopping 1
+        time.sleep(PAUSE_S)
+        # stop and spray
+
+        print(f"[PATTERN] Forward {devided:.0f} mm")
+        drive_forward_mm(ser, devided, label=f"fwd_{i}") # width for stopping 2
+        time.sleep(PAUSE_S)
+        # stop and dont spray
+
+        print(f"[PATTERN] Forward {devided:.0f} mm")
+        drive_forward_mm(ser, devided, label=f"fwd_{i}") # width for stopping 3
+        time.sleep(PAUSE_S)
+        # stop and dont spray
         
         print("[PATTERN] Rotate Left (~90 using your current rotation tuning)")
         rotate_90(ser, direction=1)  # Left
         
-        drive_forward_mm(ser, STEP_MM_width, label=f"fwd_{i}") # width
+        drive_forward_mm(ser, STEP_MM_long, label=f"fwd_{i}") # long side
         time.sleep(PAUSE_S)
         # detect_rust()
 
         print("[PATTERN] Rotate Left (~90 using your current rotation tuning)")
         rotate_90(ser, direction=1)  # Left
+
+        print(f"[PATTERN] Forward {STEP_MM_width:.0f} mm")
+        drive_forward_mm(ser, STEP_MM_width, label=f"fwd_{i}") # width side, back to the original point
+        time.sleep(PAUSE_S)
 
         # rotate_90(ser, direction=1)  # RIGHT
         # time.sleep(PAUSE_S)
