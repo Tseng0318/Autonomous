@@ -281,6 +281,9 @@ def start_scan():
     TODO: Implement actual scan logic here
     """
     global AUTO_MOVE
+    if STATIONS_MOVE is not None and STATIONS_MOVE.is_alive():
+        print("Stop stations scan before starting this functionality")
+        return
     try:
         with SCAN_THREAD_LOCK:
             app.logger.info("[SCAN] Starting autonomous scan...")
@@ -303,13 +306,16 @@ def start_scan():
 def stop_scan():
     """
     Stop the robot and halt autonomous scanning.
+    Stations and normal scan wont be running at the same time
     """
-    global AUTO_MOVE
+    global AUTO_MOVE, STATIONS_MOVE
     try:
         app.logger.info("[SCAN] Stopping scan and robot...")
         stop_event.set()  # Signal the autonomous thread to stop
         if AUTO_MOVE is not None and AUTO_MOVE.is_alive():
             AUTO_MOVE.join(timeout=1.0)  # Wait for the autonomous movement thread to finish
+        elif STATIONS_MOVE is not None and STATIONS_MOVE.is_alive():
+            AUTO_MOVE.join(timeout=1.0) 
         # TODO: Add scan cleanup logic
         return jsonify(ok=True, status="scan_stopped")
     except Exception as e:
@@ -342,6 +348,9 @@ def return_to_base():
     TODO: Implement actual scan logic here
     """
     global STATIONS_MOVE
+    if AUTO_MOVE is not None and AUTO_MOVE.is_alive:
+        print("stop scanning before starting this functionality")
+        return
     try:
         with STATIONS_THREAD_LOCK:
             app.logger.info("[SCAN] Starting autonomous scan...")

@@ -1,5 +1,5 @@
 '''
-Reference file for reverse kinemtics using ikpy
+Reference file for inverse kinemtics using ikpy
 '''
 
 import math
