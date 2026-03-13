@@ -97,11 +97,7 @@ def main(stop_event, ser):
         print("\n[MAIN] Ctrl+C received, stopping.")
 
     finally:
-        try:
-            stop(ser)
-        except Exception:
-            pass
-        stop_event.clear()
+        stop_event.clear()  
         print("[MAIN] Serial closed, exiting.")
 
 if __name__ == "__main__":
@@ -109,3 +105,4 @@ if __name__ == "__main__":
     stop_event = threading.Event()
     stop_event.clear() # set the event to indicate running
     main(stop_event, ser)
+    stop(ser)
