@@ -5,22 +5,42 @@
 ```bash
 cd AUTONOMOUS-ROVER--PRESET-PATH
 ```
-2. Create a virtual environment:
+2. Install system dependencies:
+```bash
+pip install -r sys-requirements.txt
+```
+3. Create a virtual environment:
 ```bash
 python3 -m venv venv
 ```
-3. Activate the virtual environment:
+4. Activate the virtual environment:
 ```bash
 source venv/bin/activate
 ```
-4. Install dependencies:
+5. Install virtual enviroment dependencies:
 ```bash
-pip install -r requirements.txt
+pip install -r venv-requirements.txt
 ```
-5. (Optional) Update the requirements file with installed packages:
+6. (Optional) Update the requirements file with installed packages:
 ```bash
 pip freeze > requirements.txt
 ```
+
+---
+
+## How to Run 
+1. Considerations:
+- Make sure both pi and devices interfacing with the website are both on the same wi-fi connection 
+
+2. Activate the virtual environment:
+```bash
+source venv/bin/activate
+```
+3. Run app file:
+```bash
+python -m app.app
+```
+4. ctrl+c to terminate program
 
 ---
 

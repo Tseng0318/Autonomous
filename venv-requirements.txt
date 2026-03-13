@@ -1,0 +1,11 @@
+flask
+torch
+matplotlib
+torchvision
+ultralytics
+opencv-python
+fastai
+numpy
+pandas
+scikit-learn
+rplidar

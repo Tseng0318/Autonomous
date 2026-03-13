@@ -1,8 +1,0 @@
-flask
-numpy
-pyserial
-gpiozeros
-cv2
-rplidar
-matplotlib
-torch

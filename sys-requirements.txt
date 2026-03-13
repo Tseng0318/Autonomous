@@ -1,0 +1,9 @@
+python3-venv
+python3-pip
+python3-lgpio
+python3-gpiozero
+python3-pigpio
+python3-serial
+libcamera-apps
+libatlas-base-dev
+libopenblas-dev
