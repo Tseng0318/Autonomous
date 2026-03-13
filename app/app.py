@@ -12,7 +12,7 @@ sys.path.insert(0, _ROOT)                        # workspace root — makes 'bas
 sys.path.insert(1, os.path.join(_ROOT, 'base'))  # base/ itself — so bare imports inside base files work
 
 from flask import Flask, request, render_template, jsonify
-import os, time, glob, logging, requests, json
+import os, time, logging, json
 import threading
 import numpy as np
 
@@ -119,49 +119,6 @@ def _run_stations_thread():
         station(STATION_STOP_EVENT, ser)
     except Exception as e:
         app.logger.exception(f"[AUTO] Autonomous thread crashed: {e}")
-
-def _auto_serial(pattern, baud):
-    '''
-    functionality: 
-        Auto-detect and open a serial port.
-    args:
-        pattern: glob pattern to search for serial ports
-        baud: baud rate for serial communication
-    '''
-    ports = sorted(glob.glob(pattern))
-    if not ports:
-        raise RuntimeError(f"No serial ports found matching {pattern}")
-    s = serial.Serial(ports[0], baudrate=baud, timeout=1)
-    try:
-        s.setRTS(False); s.setDTR(False)
-    except Exception:
-        pass
-    time.sleep(0.3)
-    return s
-
-def _arm_send_line(line: str):
-    '''
-    functionality:
-        Send a text command terminated by newline.
-    args:
-        line: command string to send
-    '''
-    if ser is None or not ser.is_open:
-        raise RuntimeError("Serial not initialized")
-    if not line.endswith("\n"):
-        line += "\n"
-    ser.write(line.encode("utf-8"))
-    app.logger.info(f"[ARM] → {line.strip()}")
-
-# Base (Wi-Fi proxy)
-def _base_headers():
-    '''
-    functionality:
-        Construct headers for the base (Wi-Fi) requests.
-    '''
-    h = {"Accept":"application/json"}
-    if BASE_AUTH: h["Authorization"]=BASE_AUTH
-    return h
 
 # Base Movement
 def move_base(L,R):
