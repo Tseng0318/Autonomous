@@ -59,6 +59,8 @@ def setup_servo():
     for pin in servo_pins:
         pwms.append(AngularServo(pin, min_angle=0, max_angle=180, initial_angle=0))
     
+    global VALVE
+    VALVE = LED(valve_pin)
     
     print("Servos initialized.")
 
@@ -72,8 +74,7 @@ def set_angle(servo_num: int, angle: float):
     if servo_num < 1 or servo_num > len(pwms):
         print("Invalid servo number")
         return 
-    global VALVE
-    VALVE = LED(9)
+    
 
     servo = pwms[servo_num - 1]  # servo_num is 1-indexed
     servo.angle = angle
@@ -141,19 +142,13 @@ def valve_toggle(state):
         LED.off()
 if __name__ == "__main__":
     try:
+       setup_servo()
        while True:
             ser = input("Enter servo number:")
             angle = float(input("Enter angle (0-180):"))
-            setup_servo()
             set_angle(int(ser), angle)
-            cleanup()
-            #app.logger.info(f"servo {ser} moved to {angle} degrees.")
             print(f"servo {ser} moved to {angle} degrees.")
-            exit(0)
             time.sleep(2)
        
-    except Exception as e:
-        #app.logger.exception("Error in servo control")
-        print(f"Error in servo control: {e}")
-    finally:
+    except KeyboardInterrupt:
         cleanup()

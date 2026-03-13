@@ -272,7 +272,7 @@ def stop_scan():
         if AUTO_MOVE is not None and AUTO_MOVE.is_alive():
             AUTO_MOVE.join(timeout=1.0)  # Wait for the autonomous movement thread to finish
         elif STATIONS_MOVE is not None and STATIONS_MOVE.is_alive():
-            AUTO_MOVE.join(timeout=1.0) 
+            AUTO_MOVE.join(timeout=10.0) 
         # TODO: Add scan cleanup logic
         return jsonify(ok=True, status="scan_stopped")
     except Exception as e:
@@ -341,4 +341,6 @@ if __name__=="__main__":
         if AI_MODEL_THREAD is not None and AI_MODEL_THREAD.is_alive():
             AI_DISPLAY_STOP.set()  # Unblock display thread if waiting
             AI_MODEL_THREAD.join(timeout=1.0)
+        if STATIONS_MOVE is not None and STATIONS_MOVE.is_alive():
+            AUTO_MOVE.join(timeout=10.0) 
         cleanup()
