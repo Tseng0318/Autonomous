@@ -44,6 +44,14 @@ python -m app.app
 
 ---
 
+## Live Stream Setup and Run
+1. On the iPhone camera source, open this link in Safari to start broadcasting:
+```text
+https://vdo.ninja/?push=robotcam2026&webcam
+```
+
+---
+
 ## System Structure
 
 ### `app/`
