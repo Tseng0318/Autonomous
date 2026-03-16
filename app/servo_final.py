@@ -83,8 +83,11 @@ def set_angle(servo_num: int, angle: float):
 
 
 def cleanup():
+    global VALVE
     for servo in pwms:
         servo.close()
+    
+    VALVE.off()
     print("Servos cleaned up.")
 
 '''
@@ -137,9 +140,9 @@ def generic_spray():
 
 def valve_toggle(state):
     if state.lower == 'on':
-        LED.on()
+        VALVE.on()
     else:
-        LED.off()
+        VALVE.off()
 if __name__ == "__main__":
     try:
        setup_servo()
