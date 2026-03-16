@@ -130,7 +130,7 @@
           <div class="stat"><span>Confidence Level:</span><strong id="statConfLevel">--</strong></div>
           <div class="stat"><span>Inference Time:</span><strong id="statInference">--</strong></div>
           <div class="stat"><span>AI Model:</span><strong>ResNet-18</strong></div>
-          <div class="stat"><span>Threshold:</span><strong>0.65</strong></div>
+          <div class="stat"><span>Threshold:</span><strong>Uncertain: 0.50–0.75</strong></div>
         </div>
 
         <div class="section frame">
@@ -159,6 +159,60 @@
 const POLL_AI_MS      = 2000;
 const POLL_RESULTS_MS = 3000;
 const STATIONS        = ["A", "B", "C"];
+const UNCERTAIN_MIN_CONF = 0.50;
+const CERTAIN_MIN_CONF   = 0.75;
+const MOCK_MODE       = new URLSearchParams(window.location.search).get("mock") === "1";
+
+let _mockTick = 0;
+const _mockScanEntries = [];
+
+function mockClockTime() {
+  return new Date().toTimeString().slice(0, 8);
+}
+
+function getMockAiStatus() {
+  // Pattern intentionally includes: no data, rust, clean(>=0.65), uncertain(<0.65)
+  const pattern = [
+    { label: "",          conf: 0.00 },
+    { label: "CORROSION", conf: 0.86 },
+    { label: "CORROSION", conf: 0.74 },
+    { label: "CLEAN",     conf: 0.42 },
+    { label: "CORROSION", conf: 0.78 },
+    { label: "CLEAN",     conf: 0.62 },
+  ];
+  const p = pattern[_mockTick % pattern.length];
+  return {
+    label: p.label,
+    conf: p.conf,
+    running: true,
+    robot_connected: true,
+  };
+}
+
+function classifyAiDecision(label, conf) {
+  if (UNCERTAIN_MIN_CONF <= conf && conf < CERTAIN_MIN_CONF) return "Uncertain";
+  return label === "CORROSION" ? "Rust" : "Clean";
+}
+
+function pushMockScanEntry() {
+  const station = STATIONS[_mockTick % STATIONS.length];
+  const ai = getMockAiStatus();
+  const decision = classifyAiDecision(ai.label, ai.conf);
+  const action   = decision === "Rust" ? "Spray" : (decision === "Clean" ? "None" : "Review");
+  _mockScanEntries.push({
+    station,
+    score: ai.conf,
+    decision,
+    action,
+    time: mockClockTime(),
+  });
+}
+
+function getMockScanResults() {
+  pushMockScanEntry();
+  _mockTick += 1;
+  return _mockScanEntries.slice(-18);
+}
 
 // â”€â”€ Live clock (mission bar) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function updateClock() {
@@ -193,57 +247,68 @@ function setDot(dotId, lblId, state, text) {
 }
 
 // â”€â”€ Poll /ai_status â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+function applyAiStatus(data) {
+  const pct     = data.conf;                      // 0.0 - 1.0
+  const hasData = data.label !== "";
+  const uncertainMin = (typeof data.uncertain_min_conf === "number") ? data.uncertain_min_conf : UNCERTAIN_MIN_CONF;
+  const certainMin   = (typeof data.certain_min_conf   === "number") ? data.certain_min_conf   : CERTAIN_MIN_CONF;
+  const decision = data.decision || (hasData
+    ? (pct >= uncertainMin && pct < certainMin ? "Uncertain" : (data.label === "CORROSION" ? "Rust" : "Clean"))
+    : "Uncertain");
+  const isRust  = hasData && decision === "Rust";
+  const running = data.running;
+  const robot   = data.robot_connected;
+
+  // Mission bar
+  document.getElementById("missionScanState").textContent =
+    running ? "RUNNING" : "IDLE";
+
+  // Gauge
+  if (hasData) {
+    setGauge(pct, isRust);
+    document.getElementById("gaugeLabel").textContent   = isRust ? "RUST DETECTED" : "NO CORROSION";
+    document.getElementById("gaugePercent").textContent = Math.round(pct * 100) + "%";
+  } else {
+    setGauge(0, false);
+    document.getElementById("gaugeLabel").textContent   = "NO DATA";
+    document.getElementById("gaugePercent").textContent = "--";
+  }
+
+  // Stats panel
+  document.getElementById("statProb").textContent =
+    hasData ? Math.round(pct * 100) + "%" : "--";
+  const confLevel = pct >= certainMin ? "HIGH" : pct >= uncertainMin ? "MEDIUM" : (hasData ? "LOW" : "--");
+  document.getElementById("statConfLevel").textContent = confLevel;
+
+  // System status dots
+  setDot("dotRobot", "lblRobot",
+    robot   ? "ok"   : "red",
+    robot   ? "Robot: Connected" : "Robot: Disconnected");
+  setDot("dotAI", "lblAI",
+    running ? "ok"   : "warn",
+    running ? "AI Model: Running" : "AI Model: Idle");
+  setDot("dotSpray", "lblSpray", "ok", "Spray System: Armed");
+
+  // Spray status pills
+  const activated = isRust && running;
+  document.getElementById("pillActivated").classList.toggle("dimmed", !activated);
+  document.getElementById("pillArmed").classList.toggle("dimmed",  activated);
+
+  // Footer legend
+  document.getElementById("legendStateText").textContent =
+    running ? "Live Scan" : "Idle";
+  document.getElementById("legendState").style.background =
+    running ? "var(--green)" : "var(--red)";
+}
+
 function pollAiStatus() {
+  if (MOCK_MODE) {
+    applyAiStatus(getMockAiStatus());
+    return;
+  }
   fetch("/ai_status")
     .then(r => r.json())
-    .then(data => {
-      const pct     = data.conf;                      // 0.0 â€“ 1.0
-      const isRust  = data.label === "CORROSION";
-      const hasData = data.label !== "";
-      const running = data.running;
-      const robot   = data.robot_connected;
-
-      // Mission bar
-      document.getElementById("missionScanState").textContent =
-        running ? "RUNNING" : "IDLE";
-
-      // Gauge
-      if (hasData) {
-        setGauge(pct, isRust);
-        document.getElementById("gaugeLabel").textContent   = isRust ? "RUST DETECTED" : "NO CORROSION";
-        document.getElementById("gaugePercent").textContent = Math.round(pct * 100) + "%";
-      } else {
-        setGauge(0, false);
-        document.getElementById("gaugeLabel").textContent   = "NO DATA";
-        document.getElementById("gaugePercent").textContent = "--";
-      }
-
-      // Stats panel
-      document.getElementById("statProb").textContent =
-        hasData ? Math.round(pct * 100) + "%" : "--";
-      const confLevel = pct >= 0.75 ? "HIGH" : pct >= 0.5 ? "MEDIUM" : (hasData ? "LOW" : "--");
-      document.getElementById("statConfLevel").textContent = confLevel;
-
-      // System status dots
-      setDot("dotRobot", "lblRobot",
-        robot   ? "ok"   : "red",
-        robot   ? "Robot: Connected" : "Robot: Disconnected");
-      setDot("dotAI", "lblAI",
-        running ? "ok"   : "warn",
-        running ? "AI Model: Running" : "AI Model: Idle");
-      setDot("dotSpray", "lblSpray", "ok", "Spray System: Armed");
-
-      // Spray status pills
-      const activated = isRust && running;
-      document.getElementById("pillActivated").classList.toggle("dimmed", !activated);
-      document.getElementById("pillArmed").classList.toggle("dimmed",  activated);
-
-      // Footer legend
-      document.getElementById("legendStateText").textContent =
-        running ? "Live Scan" : "Idle";
-      document.getElementById("legendState").style.background =
-        running ? "var(--green)" : "var(--red)";
-    })
+    .then(applyAiStatus)
     .catch(() => {
       // Server unreachable
       setDot("dotRobot", "lblRobot", "red", "Robot: Offline");
@@ -255,38 +320,46 @@ function pollAiStatus() {
 // â”€â”€ Poll /scan_results â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 let _prevResultCount = 0;
 
+function applyScanResults(results) {
+  if (results.length === _prevResultCount) return; // nothing new
+  _prevResultCount = results.length;
+
+  // Current station should reflect the latest scan entry overall.
+  const lastEntry = results.length ? results[results.length - 1] : null;
+  if (lastEntry) {
+    document.getElementById("statStation").textContent = lastEntry.station;
+    document.getElementById("statInference").textContent = MOCK_MODE ? "simulated" : "--";
+  }
+
+  // Build map: station -> most recent result
+  const latest = {};
+  results.forEach(r => { latest[r.station] = r; });
+
+  STATIONS.forEach(s => {
+    const r = latest[s];
+    if (!r) return;
+
+    const pctStr = Math.round(r.score * 100) + "%";
+    document.getElementById("bar" + s).style.width   = pctStr;
+    document.getElementById("score" + s).textContent  = r.score.toFixed(2);
+
+    const decClass = r.decision === "Rust" ? "rust"
+                   : r.decision === "Clean" ? "clean" : "uncertain";
+    document.getElementById("decision" + s).innerHTML =
+      `<span class="decision ${decClass}">${r.decision}</span>`;
+    document.getElementById("action" + s).textContent = r.action;
+    document.getElementById("time"   + s).textContent = r.time;
+  });
+}
+
 function pollScanResults() {
+  if (MOCK_MODE) {
+    applyScanResults(getMockScanResults());
+    return;
+  }
   fetch("/scan_results")
     .then(r => r.json())
-    .then(data => {
-      const results = data.results;
-      if (results.length === _prevResultCount) return; // nothing new
-      _prevResultCount = results.length;
-
-      // Build map: station -> most recent result
-      const latest = {};
-      results.forEach(r => { latest[r.station] = r; });
-
-      STATIONS.forEach(s => {
-        const r = latest[s];
-        if (!r) return;
-
-        const pctStr = Math.round(r.score * 100) + "%";
-        document.getElementById("bar" + s).style.width   = pctStr;
-        document.getElementById("score" + s).textContent  = r.score.toFixed(2);
-
-        const decClass = r.decision === "Rust" ? "rust"
-                       : r.decision === "Clean" ? "clean" : "uncertain";
-        document.getElementById("decision" + s).innerHTML =
-          `<span class="decision ${decClass}">${r.decision}</span>`;
-        document.getElementById("action" + s).textContent = r.action;
-        document.getElementById("time"   + s).textContent = r.time;
-
-        // Keep statStation showing the last station scanned
-        document.getElementById("statStation").textContent  = s;
-        document.getElementById("statInference").textContent = "--";
-      });
-    })
+    .then(data => applyScanResults(data.results || []))
     .catch(() => { /* silently skip */ });
 }
 

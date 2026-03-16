@@ -9,3 +9,6 @@
   https://vdo.ninja/?push=robotcam2026&webcam
 
 =======================================================
+Mock display page link
+
+http://localhost:5000/display?mock=1

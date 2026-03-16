@@ -38,6 +38,9 @@ except Exception as _hw_err:
 
 
 app = Flask(__name__, template_folder="templates")
+# Keep UI edits visible immediately in local runs (no stale cached templates/static files).
+app.config["TEMPLATES_AUTO_RELOAD"] = True
+app.config["SEND_FILE_MAX_AGE_DEFAULT"] = 0
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s: %(message)s")
 
 
@@ -85,6 +88,18 @@ _scan_result_lock = threading.Lock()
 _STATION_NAMES = ["A", "B", "C"]
 _current_station_idx = 0
 
+# AI decision policy for dashboard output
+UNCERTAIN_MIN_CONF = 0.50
+CERTAIN_MIN_CONF = 0.75
+
+def _classify_ai_decision(lbl: str, c: float) -> str:
+    """Map model output to UI decision using an explicit uncertain confidence band."""
+    if not lbl:
+        return "Uncertain"
+    if UNCERTAIN_MIN_CONF <= c < CERTAIN_MIN_CONF:
+        return "Uncertain"
+    return "Rust" if lbl == "CORROSION" else "Clean"
+
 def _ai_display_worker():
     """Background thread: fires every time detect_rust() produces a new result."""
     global label, conf, probs, _current_station_idx
@@ -92,8 +107,8 @@ def _ai_display_worker():
         AI_CHANGED.wait()  # Block until approach.py sets the event
         with AI_LOCK:
             station = _STATION_NAMES[_current_station_idx % len(_STATION_NAMES)]
-            decision = "Rust" if label == "CORROSION" else ("Clean" if conf >= 0.65 else "Uncertain")
-            action   = "Spray" if label == "CORROSION" else ("None" if decision == "Clean" else "Review")
+            decision = _classify_ai_decision(label, float(conf))
+            action   = "Spray" if decision == "Rust" else ("None" if decision == "Clean" else "Review")
             entry = {
                 "station":  station,
                 "score":    round(float(conf), 4),
@@ -283,11 +298,15 @@ def stop_scan():
 def ai_status_endpoint():
     """Return the latest AI inference result and system connectivity."""
     with AI_LOCK:
+        c = round(float(conf), 4)
         running = AUTO_MOVE is not None and AUTO_MOVE.is_alive()
         serial_ok = ser is not None and ser.is_open
         return jsonify(
             label=label,
-            conf=round(float(conf), 4),
+            conf=c,
+            decision=_classify_ai_decision(label, c),
+            uncertain_min_conf=UNCERTAIN_MIN_CONF,
+            certain_min_conf=CERTAIN_MIN_CONF,
             running=running,
             robot_connected=serial_ok,
         )
