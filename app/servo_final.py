@@ -13,47 +13,10 @@ from gpiozero import AngularServo, LED
 from time import sleep
 import time
 import math
-'''
-from ikpy.chain import Chain
-from ikpy.link import OriginLink, URDFLink
-import numpy as np
-'''
+
 servo_pins = [26, 16, 13, 6]
 valve_pin = 3
 pwms = []
-
-'''
-L1, L2 = 5.0, 2.5  # lengths of arm segments
-arm_chain = Chain(name="3dof_arm", links=[
-    OriginLink(),
-
-    # Joint 1 — Base rotation (yaw)
-    URDFLink(
-        name="base_rotation",
-        translation_vector=[0, 0, 0],
-        orientation=[0, 0, 0],
-        rotation=[0, 0, 1],   # Z-axis
-    ),
-
-    # Joint 2 — Shoulder
-    URDFLink(
-        name="shoulder",
-        translation_vector=[0.0, 0.0, 0.5],  # link 1 length
-        orientation=[0, 0, 0],
-        rotation=[0, 1, 0],   # Y-axis
-    ),
-
-    # Joint 3 — Elbow
-    URDFLink(
-        name="elbow",
-        translation_vector=[0.0, 0.0, 0.25],  # link 2 length
-        orientation=[0, 0, 0],
-        rotation=[0, 1, 0],   # Y-axis
-    ),
-])
-'''
-
-
 
 def setup_servo():
     for pin in servo_pins:
@@ -80,8 +43,6 @@ def set_angle(servo_num: int, angle: float):
     servo.angle = angle
     sleep(1)
 
-
-
 def cleanup():
     global VALVE
     for servo in pwms:
@@ -89,35 +50,6 @@ def cleanup():
     
     VALVE.off()
     print("Servos cleaned up.")
-
-'''
-def servo_calculation(x:float, y:float, z:float):
-    '''
-'''
-    Args:
-        x, y, z: coordinates in 3D space
-    Returns:
-        [theta1, theta2, theta3] in degrees
-        angles for servo 1, 2, and 3, not yet considering servo 4 the wrist
-    '''
-'''
-    target_position = [x, y, z]
-    ik_solution = arm_chain.inverse_kinematics(
-        target_position
-    )
-    degrees =  []
-    for ik in ik_solution:
-        degrees.append(math.degrees(ik))
-    return degrees  
-
-def move_arm(x:float, y:float, z:float):
-    #Move the robotic arm to the specified (x, y, z) coordinates.
-    angles = servo_calculation(x, y, z)
-    for i in range(3):
-        set_angle(i + 1, angles[i])
-
-    return 1
-'''
 
 def generic_spray():
     set_angle(4,0)
