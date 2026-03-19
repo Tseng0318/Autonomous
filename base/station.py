@@ -37,34 +37,50 @@ def run_pattern(ser, stop_event, STEP_MM_long: float = STEP_MM_long, STEP_MM_wid
         print(f"[PATTERN] Forward {STEP_MM_long:.0f} mm")
         drive_forward_mm(ser, STEP_MM_long, label=f"fwd_{i}") # long side
         time.sleep(PAUSE_S)
+        if stop_event.is_set():
+            break
 
         print("[PATTERN] Rotate Left (~90 using your current rotation tuning)")
         rotate_90(ser, direction=1)  # Left
+        if stop_event.is_set():
+            break
 
         print(f"[PATTERN] Forward {devided:.0f} mm")
         drive_forward_mm(ser, devided, label=f"fwd_{i}") # width for stopping 1
         time.sleep(PAUSE_S)
         # stop and spray
+        if stop_event.is_set():
+            break
 
         print(f"[PATTERN] Forward {devided:.0f} mm")
         drive_forward_mm(ser, devided, label=f"fwd_{i}") # width for stopping 2
         time.sleep(PAUSE_S)
         # stop and dont spray
+        if stop_event.is_set():
+            break
 
         print(f"[PATTERN] Forward {devided:.0f} mm")
         drive_forward_mm(ser, devided, label=f"fwd_{i}") # width for stopping 3
         time.sleep(PAUSE_S)
         # stop and dont spray
+        if stop_event.is_set():
+            break
         
         print("[PATTERN] Rotate Left (~90 using your current rotation tuning)")
         rotate_90(ser, direction=1)  # Left
+        if stop_event.is_set():
+            break
         
         drive_forward_mm(ser, STEP_MM_long, label=f"fwd_{i}") # long side
         time.sleep(PAUSE_S)
         # detect_rust()
+        if stop_event.is_set():
+            break
 
         print("[PATTERN] Rotate Left (~90 using your current rotation tuning)")
         rotate_90(ser, direction=1)  # Left
+        if stop_event.is_set():
+            break
 
         print(f"[PATTERN] Forward {STEP_MM_width:.0f} mm")
         drive_forward_mm(ser, STEP_MM_width, label=f"fwd_{i}") # width side, back to the original point

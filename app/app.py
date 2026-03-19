@@ -283,10 +283,11 @@ def stop_scan():
     global AUTO_MOVE, STATIONS_MOVE
     try:
         app.logger.info("[SCAN] Stopping scan and robot...")
-        stop_event.set()  # Signal the autonomous thread to stop
         if AUTO_MOVE is not None and AUTO_MOVE.is_alive():
+            stop_event.set()  # Signal the autonomous thread to stop
             AUTO_MOVE.join(timeout=1.0)  # Wait for the autonomous movement thread to finish
         elif STATIONS_MOVE is not None and STATIONS_MOVE.is_alive():
+            STATION_STOP_EVENT.set()
             AUTO_MOVE.join(timeout=10.0) 
         # TODO: Add scan cleanup logic
         return jsonify(ok=True, status="scan_stopped")
@@ -361,5 +362,6 @@ if __name__=="__main__":
             AI_DISPLAY_STOP.set()  # Unblock display thread if waiting
             AI_MODEL_THREAD.join(timeout=1.0)
         if STATIONS_MOVE is not None and STATIONS_MOVE.is_alive():
+            STATION_STOP_EVENT.set()
             AUTO_MOVE.join(timeout=10.0) 
         cleanup()
