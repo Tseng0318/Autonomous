@@ -11,4 +11,10 @@
 =======================================================
 Mock display page link
 
+Start the Flask app from repo root:
+python app/app.py
+
+Open the mock display page in your browser:
 http://localhost:5000/display?mock=1
+
+

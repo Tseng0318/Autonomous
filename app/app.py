@@ -90,15 +90,47 @@ _current_station_idx = 0
 
 # AI decision policy for dashboard output
 UNCERTAIN_MIN_CONF = 0.50
+UNCERTAIN_HIGH_MIN_CONF = 0.60
 CERTAIN_MIN_CONF = 0.75
 
 def _classify_ai_decision(lbl: str, c: float) -> str:
-    """Map model output to UI decision using an explicit uncertain confidence band."""
-    if not lbl:
+    """Confidence-band classifier used by both real-time status and scan rows.
+
+    Rule set:
+    - < 0.50: Clean
+    - 0.50 to < 0.75: Uncertain
+    - >= 0.75: Rust
+    """
+    if c < UNCERTAIN_MIN_CONF:
+        return "Clean"
+    if c < CERTAIN_MIN_CONF:
         return "Uncertain"
-    if UNCERTAIN_MIN_CONF <= c < CERTAIN_MIN_CONF:
-        return "Uncertain"
-    return "Rust" if lbl == "CORROSION" else "Clean"
+    return "Rust"
+
+def _risk_band(c: float) -> str:
+    if c >= CERTAIN_MIN_CONF:
+        return "High"
+    if c >= UNCERTAIN_HIGH_MIN_CONF:
+        return "Moderate"
+    if c >= UNCERTAIN_MIN_CONF:
+        return "Low"
+    return "Low"
+
+def _recommendation(decision: str, c: float) -> str:
+    """Text shown in AI status recommendation field."""
+    if decision == "Rust":
+        return "Immediate treatment required"
+    if decision == "Uncertain":
+        return "Preventive treatment advised" if c >= UNCERTAIN_HIGH_MIN_CONF else "Monitor"
+    return "Monitor"
+
+def _station_action(decision: str, c: float) -> str:
+    """Action shown in scan results table."""
+    if decision == "Rust":
+        return "Spray Activated"
+    if decision == "Uncertain":
+        return "Spray Recommended" if c >= UNCERTAIN_HIGH_MIN_CONF else "Monitor"
+    return "Monitor"
 
 def _ai_display_worker():
     """Background thread: fires every time detect_rust() produces a new result."""
@@ -107,11 +139,12 @@ def _ai_display_worker():
         AI_CHANGED.wait()  # Block until approach.py sets the event
         with AI_LOCK:
             station = _STATION_NAMES[_current_station_idx % len(_STATION_NAMES)]
-            decision = _classify_ai_decision(label, float(conf))
-            action   = "Spray" if decision == "Rust" else ("None" if decision == "Clean" else "Review")
+            c = float(conf)
+            decision = _classify_ai_decision(label, c)
+            action   = _station_action(decision, c)
             entry = {
                 "station":  station,
-                "score":    round(float(conf), 4),
+                "score":    round(c, 4),
                 "decision": decision,
                 "action":   action,
                 "time":     time.strftime("%H:%M:%S"),
@@ -302,11 +335,16 @@ def ai_status_endpoint():
         c = round(float(conf), 4)
         running = AUTO_MOVE is not None and AUTO_MOVE.is_alive()
         serial_ok = ser is not None and ser.is_open
+        decision = _classify_ai_decision(label, c)
         return jsonify(
             label=label,
             conf=c,
-            decision=_classify_ai_decision(label, c),
+            decision=decision,
+            risk_score=c,
+            future_risk=_risk_band(c),
+            recommendation=_recommendation(decision, c),
             uncertain_min_conf=UNCERTAIN_MIN_CONF,
+            uncertain_high_min_conf=UNCERTAIN_HIGH_MIN_CONF,
             certain_min_conf=CERTAIN_MIN_CONF,
             running=running,
             robot_connected=serial_ok,

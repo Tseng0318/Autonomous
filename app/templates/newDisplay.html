@@ -15,7 +15,7 @@
           <div class="subtitle">Autonomous Corrosion Detection Platform</div>
         </div>
         <div class="brand">
-          <img src="../static/zerog_logo.png" alt="ZeroG Coating Systems" class="brand-logo">
+          <img src="../static/zeroG_logo.jpeg" alt="ZeroG Coating Systems" class="brand-logo">
         </div>
       </div>
       <div class="mission">
@@ -57,9 +57,10 @@
               <tr>
                 <th style="width:14%;">STATION</th>
                 <th style="width:20%;">AI SCORE</th>
-                <th style="width:24%;">DECISION</th>
-                <th style="width:20%;">ACTION</th>
-                <th style="width:12%;">TIME</th>
+                <th style="width:22%;">PREDICTIVE RISK</th>
+                <th style="width:20%;">DECISION</th>
+                <th style="width:14%;">ACTION</th>
+                <th style="width:10%;">TIME</th>
               </tr>
             </thead>
             <tbody id="scanTableBody">
@@ -71,6 +72,7 @@
                     <strong id="scoreA">--</strong>
                   </div>
                 </td>
+                <td id="riskA"><span class="pending">Pending</span></td>
                 <td id="decisionA"><span class="pending">Pending</span></td>
                 <td id="actionA"><span class="pending">--</span></td>
                 <td id="timeA"><span class="pending">--</span></td>
@@ -83,6 +85,7 @@
                     <strong id="scoreB">--</strong>
                   </div>
                 </td>
+                <td id="riskB"><span class="pending">Pending</span></td>
                 <td id="decisionB"><span class="pending">Pending</span></td>
                 <td id="actionB"><span class="pending">--</span></td>
                 <td id="timeB"><span class="pending">--</span></td>
@@ -95,6 +98,7 @@
                     <strong id="scoreC">--</strong>
                   </div>
                 </td>
+                <td id="riskC"><span class="pending">Pending</span></td>
                 <td id="decisionC"><span class="pending">Pending</span></td>
                 <td id="actionC"><span class="pending">--</span></td>
                 <td id="timeC"><span class="pending">--</span></td>
@@ -118,7 +122,9 @@
         <div class="section frame">
           <h3 class="panel-title">AI DETECTION STATUS</h3>
           <div class="stat"><span>Current Station:</span><strong id="statStation">--</strong></div>
-          <div class="stat"><span>Rust Probability</span><strong id="statProb">--</strong></div>
+          <div class="stat"><span>Rust Probability:</span><strong id="statProb">--</strong></div>
+          <div class="stat"><span>Predictive Corrosion Risk:</span><strong id="statRiskScore">--</strong></div>
+          <div class="stat"><span>Future Risk:</span><strong id="statFutureRisk">--</strong></div>
           <div class="gauge-wrap">
             <div class="gauge" id="gaugeEl">
               <div class="gauge-inner">
@@ -127,10 +133,26 @@
               </div>
             </div>
           </div>
+          <div class="forecast-box">
+            <div class="forecast-line">
+              <span class="forecast-icon">&#10003;</span>
+              <div class="forecast-text">
+                <span class="forecast-label">AI Forecast:</span>
+                <strong id="statForecast">--</strong>
+              </div>
+            </div>
+            <div class="forecast-line">
+              <span class="forecast-icon">&#10003;</span>
+              <div class="forecast-text">
+                <span class="forecast-label">Recommendation:</span>
+                <strong id="statRecommendationCenter">--</strong>
+              </div>
+            </div>
+          </div>
           <div class="stat"><span>Confidence Level:</span><strong id="statConfLevel">--</strong></div>
           <div class="stat"><span>Inference Time:</span><strong id="statInference">--</strong></div>
           <div class="stat"><span>AI Model:</span><strong>ResNet-18</strong></div>
-          <div class="stat"><span>Threshold:</span><strong>Uncertain: 0.50–0.75</strong></div>
+          <div class="stat"><span>Threshold:</span><strong>0.50-0.75</strong></div>
         </div>
 
         <div class="section frame">
@@ -160,6 +182,7 @@ const POLL_AI_MS      = 2000;
 const POLL_RESULTS_MS = 3000;
 const STATIONS        = ["A", "B", "C"];
 const UNCERTAIN_MIN_CONF = 0.50;
+const UNCERTAIN_HIGH_MIN = 0.60;
 const CERTAIN_MIN_CONF   = 0.75;
 const MOCK_MODE       = new URLSearchParams(window.location.search).get("mock") === "1";
 
@@ -171,14 +194,24 @@ function mockClockTime() {
 }
 
 function getMockAiStatus() {
-  // Pattern intentionally includes: no data, rust, clean(>=0.65), uncertain(<0.65)
+  // Extended pattern covers boundaries and all risk/decision bands.
   const pattern = [
     { label: "",          conf: 0.00 },
+    { label: "CLEAN",     conf: 0.18 },
+    { label: "CORROSION", conf: 0.49 },
+    { label: "CLEAN",     conf: 0.50 },
+    { label: "CLEAN",     conf: 0.57 },
+    { label: "CORROSION", conf: 0.60 },
+    { label: "CLEAN",     conf: 0.68 },
     { label: "CORROSION", conf: 0.86 },
     { label: "CORROSION", conf: 0.74 },
     { label: "CLEAN",     conf: 0.42 },
+    { label: "CORROSION", conf: 0.75 },
+    { label: "CORROSION", conf: 0.92 },
     { label: "CORROSION", conf: 0.78 },
     { label: "CLEAN",     conf: 0.62 },
+    { label: "CLEAN",     conf: 0.83 },
+    { label: "CORROSION", conf: 0.55 },
   ];
   const p = pattern[_mockTick % pattern.length];
   return {
@@ -190,15 +223,46 @@ function getMockAiStatus() {
 }
 
 function classifyAiDecision(label, conf) {
-  if (UNCERTAIN_MIN_CONF <= conf && conf < CERTAIN_MIN_CONF) return "Uncertain";
-  return label === "CORROSION" ? "Rust" : "Clean";
+  if (conf < UNCERTAIN_MIN_CONF) return "Clean";
+  if (conf < CERTAIN_MIN_CONF) return "Uncertain";
+  return "Rust";
+}
+
+function classifyRiskBand(conf) {
+  if (conf >= CERTAIN_MIN_CONF) return "High";
+  if (conf >= UNCERTAIN_HIGH_MIN) return "Moderate";
+  if (conf >= UNCERTAIN_MIN_CONF) return "Low";
+  return "Low";
+}
+
+function recommendationFromDecision(decision, conf) {
+  if (decision === "Rust") return "Immediate treatment required";
+  if (decision === "Uncertain") return conf >= UNCERTAIN_HIGH_MIN ? "Preventive treatment advised" : "Monitor";
+  return "Monitor";
+}
+
+function stationActionFromDecision(decision, conf) {
+  if (decision === "Rust") return "Spray Activated";
+  if (decision === "Uncertain") return conf >= UNCERTAIN_HIGH_MIN ? "Spray Recommended" : "Monitor";
+  return "Monitor";
+}
+
+function uncertaintyTag(conf) {
+  if (conf >= UNCERTAIN_HIGH_MIN) return "Uncertain (High)";
+  return "Uncertain (Low)";
+}
+
+function predictiveRiskTag(decision, conf) {
+  if (decision === "Rust") return "Rust Confirmed";
+  if (decision === "Uncertain") return conf >= UNCERTAIN_HIGH_MIN ? "Preventive Alert" : "Moderate Alert";
+  return "Low Risk";
 }
 
 function pushMockScanEntry() {
   const station = STATIONS[_mockTick % STATIONS.length];
   const ai = getMockAiStatus();
   const decision = classifyAiDecision(ai.label, ai.conf);
-  const action   = decision === "Rust" ? "Spray" : (decision === "Clean" ? "None" : "Review");
+  const action = stationActionFromDecision(decision, ai.conf);
   _mockScanEntries.push({
     station,
     score: ai.conf,
@@ -252,9 +316,13 @@ function applyAiStatus(data) {
   const hasData = data.label !== "";
   const uncertainMin = (typeof data.uncertain_min_conf === "number") ? data.uncertain_min_conf : UNCERTAIN_MIN_CONF;
   const certainMin   = (typeof data.certain_min_conf   === "number") ? data.certain_min_conf   : CERTAIN_MIN_CONF;
-  const decision = data.decision || (hasData
-    ? (pct >= uncertainMin && pct < certainMin ? "Uncertain" : (data.label === "CORROSION" ? "Rust" : "Clean"))
-    : "Uncertain");
+  const decision = hasData
+    ? (pct < uncertainMin ? "Clean" : (pct < certainMin ? "Uncertain" : "Rust"))
+    : "Uncertain";
+  const riskScore = typeof data.risk_score === "number" ? data.risk_score : pct;
+  const futureRisk = data.future_risk || classifyRiskBand(pct);
+  const recommendation = data.recommendation || recommendationFromDecision(decision, pct);
+  const gaugeText = decision === "Uncertain" ? uncertaintyTag(pct) : (decision === "Rust" ? "RUST DETECTED" : "NO CORROSION");
   const isRust  = hasData && decision === "Rust";
   const running = data.running;
   const robot   = data.robot_connected;
@@ -266,7 +334,7 @@ function applyAiStatus(data) {
   // Gauge
   if (hasData) {
     setGauge(pct, isRust);
-    document.getElementById("gaugeLabel").textContent   = isRust ? "RUST DETECTED" : "NO CORROSION";
+    document.getElementById("gaugeLabel").textContent   = gaugeText;
     document.getElementById("gaugePercent").textContent = Math.round(pct * 100) + "%";
   } else {
     setGauge(0, false);
@@ -277,8 +345,20 @@ function applyAiStatus(data) {
   // Stats panel
   document.getElementById("statProb").textContent =
     hasData ? Math.round(pct * 100) + "%" : "--";
+  document.getElementById("statRiskScore").textContent =
+    hasData ? Math.round(riskScore * 100) + "%" : "--";
+  document.getElementById("statFutureRisk").textContent = hasData ? futureRisk : "--";
   const confLevel = pct >= certainMin ? "HIGH" : pct >= uncertainMin ? "MEDIUM" : (hasData ? "LOW" : "--");
-  document.getElementById("statConfLevel").textContent = confLevel;
+  document.getElementById("statConfLevel").textContent = hasData ? pct.toFixed(2) + " (" + confLevel + ")" : "--";
+  document.getElementById("statRecommendationCenter").textContent = hasData ? recommendation : "--";
+  const forecastText = !hasData
+    ? "Awaiting model confidence update."
+    : (decision === "Rust"
+      ? "Corrosion detected in this zone."
+      : (decision === "Uncertain"
+        ? (pct >= UNCERTAIN_HIGH_MIN ? "Corrosion likely developing in this zone." : "Weak corrosion signal; monitor this zone.")
+        : "No active corrosion signal in this zone."));
+  document.getElementById("statForecast").textContent = forecastText;
 
   // System status dots
   setDot("dotRobot", "lblRobot",
@@ -343,11 +423,24 @@ function applyScanResults(results) {
     document.getElementById("bar" + s).style.width   = pctStr;
     document.getElementById("score" + s).textContent  = r.score.toFixed(2);
 
+    const shownDecision = r.decision === "Uncertain" ? uncertaintyTag(r.score) : r.decision;
+    const riskTag = predictiveRiskTag(r.decision, r.score);
     const decClass = r.decision === "Rust" ? "rust"
                    : r.decision === "Clean" ? "clean" : "uncertain";
+    const riskClass = r.decision === "Rust" ? "rust"
+                    : r.decision === "Clean" ? "clean" : "uncertain";
+    document.getElementById("risk" + s).innerHTML =
+      `<span class="decision ${riskClass}">${riskTag}</span>`;
     document.getElementById("decision" + s).innerHTML =
-      `<span class="decision ${decClass}">${r.decision}</span>`;
-    document.getElementById("action" + s).textContent = r.action;
+      `<span class="decision ${decClass}">${shownDecision}</span>`;
+    const actionText = r.action || stationActionFromDecision(r.decision, r.score);
+    const actionClass = actionText === "Spray Activated"
+      ? "action-activated"
+      : actionText === "Spray Recommended"
+        ? "action-recommended"
+        : "action-monitor";
+    document.getElementById("action" + s).innerHTML =
+      `<span class="action-chip ${actionClass}">${actionText}</span>`;
     document.getElementById("time"   + s).textContent = r.time;
   });
 }

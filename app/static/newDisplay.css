@@ -68,7 +68,7 @@ body {
 
 .brand .big { display: block; font-size: 34px; font-weight: 700; color: #f2f8ff; }
 
-.brand-logo { height: 58px; width: auto; max-width: 180px; object-fit: contain; display: block; }
+.brand-logo { height: 44px; width: auto; max-width: 150px; object-fit: contain; display: block; }
 
 .mission {
   margin-top: 8px; padding-top: 8px; border-top: 1px solid rgba(120,233,255,.20);
@@ -211,12 +211,73 @@ body {
   width: 108px; height: 108px; border-radius: 50%;
   border: 2px solid rgba(120,233,255,.22);
   display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 4px;
   text-align: center;
   background: rgba(5,9,14,.94);
 }
 
-.gauge-inner .small { font-size: 12px; letter-spacing: 1px; color: #dfeefa; }
+.gauge-inner .small {
+  font-size: 11px;
+  letter-spacing: 0.3px;
+  line-height: 1.15;
+  color: #dfeefa;
+  max-width: 88px;
+  min-height: 25px;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+}
 .gauge-inner .big   { font-size: 38px; font-weight: 700; color: var(--cyan); line-height: 1.05; }
+
+.forecast-box {
+  margin: 2px 0 6px;
+  padding: 6px 8px;
+  border-top: 1px solid rgba(120,233,255,.16);
+  border-bottom: 1px solid rgba(120,233,255,.16);
+  border-radius: 7px;
+  background: rgba(120,233,255,.03);
+}
+
+.forecast-line {
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+  padding: 4px 0;
+  font-size: 12px;
+}
+
+.forecast-icon {
+  width: 15px;
+  height: 15px;
+  margin-top: 1px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgba(255,212,99,.55);
+  background: rgba(255,212,99,.12);
+  color: #ffe8aa;
+  font-size: 10px;
+  line-height: 1;
+  flex: 0 0 auto;
+}
+
+.forecast-text {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  line-height: 1.25;
+}
+
+.forecast-label {
+  color: #ffd463;
+  font-weight: 700;
+}
+
+.forecast-text strong {
+  color: #eef7ff;
+  font-weight: 600;
+}
 
 /* ── System status dots ── */
 .status-list .item { display: flex; align-items: center; gap: 10px; padding: 3px 0; font-size: 13px; }
@@ -280,9 +341,15 @@ tr:last-child td { border-bottom: none; }
 
 .decision { font-weight: 700; padding: 4px 10px; border-radius: 5px; display: inline-block; }
 
+.action-chip { font-weight: 700; padding: 4px 10px; border-radius: 5px; display: inline-block; }
+
 .rust      { background: rgba(255,93,107,.14); color: #ffd3d8; border: 1px solid rgba(255,93,107,.25); }
 .clean     { background: rgba(104,255,156,.12); color: #c9ffd9; border: 1px solid rgba(104,255,156,.22); }
 .uncertain { background: rgba(255,212,99,.12);  color: #ffe8aa; border: 1px solid rgba(255,212,99,.25); }
+
+.action-activated { background: rgba(255,93,107,.14); color: #ffd3d8; border: 1px solid rgba(255,93,107,.25); }
+.action-recommended { background: rgba(255,212,99,.12); color: #ffe8aa; border: 1px solid rgba(255,212,99,.25); }
+.action-monitor { background: rgba(104,255,156,.12); color: #c9ffd9; border: 1px solid rgba(104,255,156,.22); }
 
 /* ── Footer line ── */
 .footerline {
