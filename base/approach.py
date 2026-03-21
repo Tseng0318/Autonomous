@@ -23,7 +23,7 @@ from lidar_util import (
 
 from motion import drive_forward_mm
 from new_rotation import rotate_random_90, rotate_same_90
-from model import detect_rust
+from model2 import detect_rust
 import numpy as np 
 import threading
 

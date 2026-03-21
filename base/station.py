@@ -11,7 +11,7 @@ import threading
 
 from motion import drive_forward_mm, stop
 from new_rotation import rotate_90  # uses your existing function: direction=-1 means RIGHT
-from model import detect_rust
+from model2 import detect_rust
 
 PORT_UGV = "/dev/ttyACM0"
 BAUD_UGV = 115200
