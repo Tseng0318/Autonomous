@@ -398,11 +398,18 @@ function pollAiStatus() {
 }
 
 // â”€â”€ Poll /scan_results â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-let _prevResultCount = 0;
+let _prevResultsSignature = "";
+
+function resultsSignature(results) {
+  return results
+    .map(r => [r.station, r.score, r.decision, r.action, r.time].join("|"))
+    .join(";");
+}
 
 function applyScanResults(results) {
-  if (results.length === _prevResultCount) return; // nothing new
-  _prevResultCount = results.length;
+  const signature = resultsSignature(results);
+  if (signature === _prevResultsSignature) return; // nothing changed
+  _prevResultsSignature = signature;
 
   // Current station should reflect the latest scan entry overall.
   const lastEntry = results.length ? results[results.length - 1] : null;

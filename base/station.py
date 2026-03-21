@@ -22,6 +22,15 @@ N_REPS = 20            # number of repetitions; set to None for infinite loop
 PAUSE_S = 0.05         # small pause between actions
 
 
+def _scan_current_station(station_name: str) -> None:
+    """Take one scan for the reached station and publish to dashboard backend."""
+    import app.app as _app  # Deferred import to avoid circular import at module load.
+
+    lbl, c, p = detect_rust()
+    _app.record_station_ai_scan(station_name, lbl, c, p)
+    print(f"[STATION] {station_name}: label={lbl}, conf={float(c):.4f}")
+
+
 def request_fast_telemetry(ser) -> None:
     """Ask MCU to stream telemetry faster (same as your main.py)."""
     ser.write((json.dumps({"T": 142, "cmd": 50}) + "\n").encode("utf-8"))
@@ -48,21 +57,21 @@ def run_pattern(ser, stop_event, STEP_MM_long: float = STEP_MM_long, STEP_MM_wid
         print(f"[PATTERN] Forward {devided:.0f} mm")
         drive_forward_mm(ser, devided, label=f"fwd_{i}") # width for stopping 1
         time.sleep(PAUSE_S)
-        # stop and spray
+        _scan_current_station("A")
         if stop_event.is_set():
             break
 
         print(f"[PATTERN] Forward {devided:.0f} mm")
         drive_forward_mm(ser, devided, label=f"fwd_{i}") # width for stopping 2
         time.sleep(PAUSE_S)
-        # stop and dont spray
+        _scan_current_station("B")
         if stop_event.is_set():
             break
 
         print(f"[PATTERN] Forward {devided:.0f} mm")
         drive_forward_mm(ser, devided, label=f"fwd_{i}") # width for stopping 3
         time.sleep(PAUSE_S)
-        # stop and dont spray
+        _scan_current_station("C")
         if stop_event.is_set():
             break
         

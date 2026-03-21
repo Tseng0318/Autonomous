@@ -15,6 +15,7 @@ from flask import Flask, request, render_template, jsonify
 import os, time, logging, json
 import threading
 import numpy as np
+from collections import deque
 
 # --- Hardware imports (Pi-only; stubbed on Windows/dev) ---
 HARDWARE_AVAILABLE = True
@@ -87,6 +88,8 @@ scan_results = []                        # accumulated per-cycle AI results
 _scan_result_lock = threading.Lock()
 _STATION_NAMES = ["A", "B", "C"]
 _current_station_idx = 0
+_station_result_by_name = {name: None for name in _STATION_NAMES}
+_pending_station_scans = deque()
 
 # AI decision policy for dashboard output
 UNCERTAIN_MIN_CONF = 0.50
@@ -132,28 +135,104 @@ def _station_action(decision: str, c: float) -> str:
         return "Spray Recommended" if c >= UNCERTAIN_HIGH_MIN_CONF else "Monitor"
     return "Monitor"
 
+def reset_station_state() -> None:
+    """Reset station scan state for a new station-to-station mission."""
+    global _current_station_idx
+    with _scan_result_lock:
+        _current_station_idx = 0
+        _pending_station_scans.clear()
+        for station_name in _STATION_NAMES:
+            _station_result_by_name[station_name] = None
+        scan_results.clear()
+
+def record_station_ai_scan(station_name: str, lbl: str, c: float, p) -> None:
+    """Publish one AI scan result for the specific physical station reached."""
+    station_name = str(station_name).strip().upper()
+    if station_name not in _STATION_NAMES:
+        raise ValueError(f"Unknown station '{station_name}'. Expected one of {_STATION_NAMES}")
+
+    with _scan_result_lock:
+        _pending_station_scans.append({
+            "station": station_name,
+            "label": lbl,
+            "conf": float(c),
+            "probs": p,
+        })
+    AI_CHANGED.set()
+
 def _ai_display_worker():
     """Background thread: fires every time detect_rust() produces a new result."""
     global label, conf, probs, _current_station_idx
     while not AI_DISPLAY_STOP.is_set():
         AI_CHANGED.wait()  # Block until approach.py sets the event
-        with AI_LOCK:
-            station = _STATION_NAMES[_current_station_idx % len(_STATION_NAMES)]
-            c = float(conf)
-            decision = _classify_ai_decision(label, c)
-            action   = _station_action(decision, c)
+        processed_station_payload = False
+
+        while not AI_DISPLAY_STOP.is_set():
+            with _scan_result_lock:
+                payload = _pending_station_scans.popleft() if _pending_station_scans else None
+
+            if payload is None:
+                if processed_station_payload:
+                    break
+                # Fallback for generic scan flow that does not publish station name.
+                with AI_LOCK:
+                    lbl = label
+                    c = float(conf)
+                with _scan_result_lock:
+                    station = _STATION_NAMES[_current_station_idx % len(_STATION_NAMES)]
+                    _current_station_idx += 1
+                break
+
+            station = payload["station"]
+            lbl = payload["label"]
+            c = float(payload["conf"])
+            p = payload.get("probs", [])
+            processed_station_payload = True
+            # Keep shared latest AI status in sync with published station scans.
+            with AI_LOCK:
+                label = lbl
+                conf = c
+                probs = p
+
+            decision = _classify_ai_decision(lbl, c)
+            action = _station_action(decision, c)
             entry = {
-                "station":  station,
-                "score":    round(c, 4),
+                "station": station,
+                "score": round(c, 4),
                 "decision": decision,
-                "action":   action,
-                "time":     time.strftime("%H:%M:%S"),
+                "action": action,
+                "time": time.strftime("%H:%M:%S"),
             }
             with _scan_result_lock:
-                scan_results.append(entry)
-            _current_station_idx += 1
-            app.logger.info(f"[DISPLAY] Station {station}: {decision} ({conf:.2%})")
-            AI_CHANGED.clear()
+                # Keep one latest result per station for real mission display.
+                _station_result_by_name[station] = entry
+                scan_results[:] = [
+                    _station_result_by_name[s]
+                    for s in _STATION_NAMES
+                    if _station_result_by_name[s] is not None
+                ]
+            app.logger.info(f"[DISPLAY] Station {station}: {decision} ({c:.2%})")
+
+        if not processed_station_payload and not AI_DISPLAY_STOP.is_set():
+            decision = _classify_ai_decision(lbl, c)
+            action = _station_action(decision, c)
+            entry = {
+                "station": station,
+                "score": round(c, 4),
+                "decision": decision,
+                "action": action,
+                "time": time.strftime("%H:%M:%S"),
+            }
+            with _scan_result_lock:
+                _station_result_by_name[station] = entry
+                scan_results[:] = [
+                    _station_result_by_name[s]
+                    for s in _STATION_NAMES
+                    if _station_result_by_name[s] is not None
+                ]
+            app.logger.info(f"[DISPLAY] Station {station}: {decision} ({c:.2%})")
+
+        AI_CHANGED.clear()
 
 
 def _run_auto_thread():
@@ -294,6 +373,7 @@ def start_scan():
             app.logger.info("[SCAN] Starting autonomous scan...")
             if ser is None or not ser.is_open:
                 return jsonify(ok=False, error="UGV serial is not connected"), 500
+            reset_station_state()
             if AUTO_MOVE is None or not AUTO_MOVE.is_alive():
                 stop_event.clear()
                 AUTO_MOVE = threading.Thread(target=_run_auto_thread, daemon=True) # Thread to run the autonomous movement logic
@@ -352,9 +432,14 @@ def ai_status_endpoint():
 
 @app.route("/scan_results")
 def get_scan_results():
-    """Return all accumulated per-cycle scan results."""
+    """Return one latest result per station in A/B/C order."""
     with _scan_result_lock:
-        return jsonify(results=list(scan_results))
+        ordered = [
+            _station_result_by_name[s]
+            for s in _STATION_NAMES
+            if _station_result_by_name[s] is not None
+        ]
+        return jsonify(results=ordered)
 
 @app.route("/return_to_base")
 def return_to_base():
@@ -371,6 +456,7 @@ def return_to_base():
             app.logger.info("[SCAN] Starting autonomous scan...")
             if ser is None or not ser.is_open:
                 return jsonify(ok=False, error="UGV serial is not connected"), 500
+            reset_station_state()
             if STATIONS_MOVE is None or not STATIONS_MOVE.is_alive():
                 stop_event.clear()
                 STATIONS_MOVE = threading.Thread(target=_run_stations_thread, daemon=True) # Thread to run the autonomous movement logic
