@@ -22,6 +22,7 @@ def setup_servo():
 
     command = f"set\n"
     ser.write(command.encode('utf-8'))
+    ser.flush()  # Ensure data is actually sent
     
     global VALVE
     VALVE = LED(valve_pin)
@@ -34,11 +35,12 @@ def set_angle(servo_num: int, angle: float):
         ser.write(command.encode('utf-8'))
         ser.flush()  # Ensure data is actually sent
         print(f"Sent: {command.strip()}")
-        
+
 def cleanup():
     global VALVE
     command = f"clean\n"
     ser.write(command.encode('utf-8'))
+    ser.flush()  # Ensure data is actually sent
     
     VALVE.off()
     print("Servos cleaned up.")
