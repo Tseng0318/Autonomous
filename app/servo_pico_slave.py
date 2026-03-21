@@ -23,8 +23,8 @@ def setup_servo():
 def set_angle(servo_num: int, angle: float):
     if not pwms:
         return
-    min_duty = 1638   # ~0.5 ms
-    max_duty = 8192   # ~2.5 ms
+    min_duty = 3276   # ~1.0 ms
+    max_duty = 6553.6   # ~2 ms
     duty = int(min_duty + (angle / 180) * (max_duty - min_duty))
     # Correct index: user sends 1-4, list is 0-3
     pwms[servo_num - 1].duty_u16(duty)
