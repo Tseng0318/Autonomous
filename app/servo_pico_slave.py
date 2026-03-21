@@ -4,12 +4,11 @@
     reverse kinematic functions unfinished
 
 '''
-from machine import Pin, PWM, UART
+from machine import Pin, PWM
 import time
+import sys
 
-uart = UART(0, baudrate=9600, tx=Pin(0), rx=Pin(1))
-
-servo_pins = [26, 16, 13, 6]
+servo_pins = [0,1,2,3]
 valve_pin = 3
 pwms = []
 
@@ -51,18 +50,25 @@ def cleanup():
     print("Cleanup complete.")
     
 def main():
-    try:
-        while True:
-            if uart.any():
-                data = uart.readline().decode('utf-8').strip().strip('\n')
-                if data == 'set':
-                    setup_servo()
-                elif data == 'clean':
-                    cleanup()
-                else:
-                    data = data.split(',')
-                    angle = float(data[1])
-                    servo_num = int(data[0])
+    while True:
+        line = sys.stdin.readline().strip()
+        if not line:
+            continue
+        try:
+            print("Received")
+            if line == 'set':
+                setup_servo()
+
+            elif line == 'clean':
+                cleanup()
+
+            else:
+                parts = line.split(',')
+
+                if len(parts) == 2:
+                    servo_num = int(parts[0])
+                    angle = float(parts[1])
                     set_angle(servo_num, angle)
-    except KeyboardInterrupt:
-        cleanup()
+
+        except Exception as e:
+            print("Error:", e)

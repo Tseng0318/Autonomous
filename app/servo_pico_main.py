@@ -29,21 +29,12 @@ def setup_servo():
     print("Servos initialized.")
 
 def set_angle(servo_num: int, angle: float):
-    """
-    Set the angle of a specified servo.
-    Args:
-        servo_num: the servo number (1-4)
-        angle: desired angle (0 to 180)
-    """
-    if servo_num < 1 or servo_num > 4:
-        print("Invalid servo number")
-        return 
-
-    command = f"{servo_num},{angle}\n"
-    ser.write(command.encode('utf-8'))
-
-    sleep(1)
-
+    if 1 <= servo_num <= 4:
+        command = f"{servo_num},{angle}\n"
+        ser.write(command.encode('utf-8'))
+        ser.flush()  # Ensure data is actually sent
+        print(f"Sent: {command.strip()}")
+        
 def cleanup():
     global VALVE
     command = f"clean\n"
