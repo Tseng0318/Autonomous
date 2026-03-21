@@ -18,7 +18,7 @@ valve_pin = 3
 
 def setup_servo():
     global ser
-    ser = serial.Serial('/dev/serial0', 9600, timeout=1)
+    ser = serial.Serial('/dev/serial/by-id/usb-MicroPython_Board_in_FS_mode_e66368254f51b032-if00', 9600, timeout=1)
 
     command = f"set\n"
     ser.write(command.encode('utf-8'))
