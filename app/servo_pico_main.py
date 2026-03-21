@@ -20,21 +20,26 @@ def setup_servo():
     global ser
     ser = serial.Serial('/dev/serial/by-id/usb-MicroPython_Board_in_FS_mode_e66368254f51b032-if00', 9600, timeout=1)
 
-    command = f"set\n"
-    ser.write(command.encode('utf-8'))
-    ser.flush()  # Ensure data is actually sent
-    
+    ser.write(b"set\n")
+    ser.flush()
+
+    response = ser.readline().decode().strip()
+    print(f"Pico says: {response}")
+
     global VALVE
     VALVE = LED(valve_pin)
-    
-    print("Servos initialized.")
 
+    print("Servos initialized.")
+    
 def set_angle(servo_num: int, angle: float):
     if 1 <= servo_num <= 4:
         command = f"{servo_num},{angle}\n"
         ser.write(command.encode('utf-8'))
-        ser.flush()  # Ensure data is actually sent
-        print(f"Sent: {command.strip()}")
+        ser.flush()
+
+        # Wait for response
+        response = ser.readline().decode('utf-8').strip()
+        print(f"Pico says: {response}")
 
 def cleanup():
     global VALVE
